@@ -4,6 +4,14 @@ set -e
 echo "Building SpeechToPrompt in release mode..."
 swift build -c release
 
+# Merge ggml-common.h into ggml-metal.metal in the build directory first
+if [ -f ".build/release/whisper_whisper.bundle/ggml-metal.metal" ]; then
+    if [ -f "whisper.cpp/ggml/src/ggml-common.h" ] && [ -f "whisper.cpp/ggml/src/ggml-metal.metal" ]; then
+        echo "Embedding ggml-common.h into ggml-metal.metal in the build directory..."
+        sed -e '/#include "ggml-common.h"/r whisper.cpp/ggml/src/ggml-common.h' -e '/#include "ggml-common.h"/d' < whisper.cpp/ggml/src/ggml-metal.metal > .build/release/whisper_whisper.bundle/ggml-metal.metal
+    fi
+fi
+
 echo "Creating App Bundle..."
 APP_DIR="SpeechToPrompt.app"
 mkdir -p "$APP_DIR/Contents/MacOS"
@@ -11,6 +19,12 @@ mkdir -p "$APP_DIR/Contents/Resources"
 
 # Copy binary
 cp ".build/release/SpeechToPrompt" "$APP_DIR/Contents/MacOS/SpeechToPrompt"
+
+# Copy Whisper Metal resources bundle
+if [ -d ".build/release/whisper_whisper.bundle" ]; then
+    echo "Copying Whisper Metal resources bundle..."
+    cp -R ".build/release/whisper_whisper.bundle" "$APP_DIR/Contents/Resources/"
+fi
 
 # Create Info.plist
 cat <<EOF > "$APP_DIR/Contents/Info.plist"

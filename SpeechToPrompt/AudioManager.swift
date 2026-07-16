@@ -1,15 +1,18 @@
 import AVFoundation
 
-class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate {
+class AudioManager: NSObject, ObservableObject {
     @Published var isRecording = false
     @Published var audioLevel: Float = 0.0
     @Published var recordingDuration: TimeInterval = 0.0
     @Published var permissionGranted = false
+    @Published var recordedSamples: [Float] = []
     
-    private var audioRecorder: AVAudioRecorder?
+    private var audioEngine: AVAudioEngine?
+    private var audioConverter: AVAudioConverter?
     private var recordingURL: URL?
-    private var timer: Timer?
     private var durationTimer: Timer?
+    
+    private let whisperFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16000, channels: 1, interleaved: false)!
     
     override init() {
         super.init()
@@ -33,56 +36,129 @@ class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate {
     }
     
     func startRecording() {
+        print("AudioManager: startRecording called")
         checkMicrophonePermission()
-        guard permissionGranted else { return }
+        guard permissionGranted else {
+            print("AudioManager Error: Microphone permission not granted")
+            return
+        }
         
-        let settings: [String: Any] = [
-            AVFormatIDKey: Int(kAudioFormatLinearPCM),
-            AVSampleRateKey: 16000.0,
-            AVNumberOfChannelsKey: 1,
-            AVLinearPCMBitDepthKey: 16,
-            AVLinearPCMIsBigEndianKey: false,
-            AVLinearPCMIsFloatKey: false,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
-        ]
+        recordedSamples = []
+        audioLevel = 0.0
+        recordingDuration = 0.0
         
-        guard let url = recordingURL else { return }
+        audioEngine = AVAudioEngine()
+        guard let engine = audioEngine else {
+            print("AudioManager Error: Could not initialize AVAudioEngine")
+            return
+        }
+        let inputNode = engine.inputNode
+        let inputFormat = inputNode.outputFormat(forBus: 0)
+        
+        print("AudioManager: Microphone outputFormat = \(inputFormat)")
+        guard inputFormat.sampleRate > 0 else {
+            print("AudioManager Error: Microphone outputFormat sample rate is 0.0")
+            return
+        }
+        
+        audioConverter = AVAudioConverter(from: inputFormat, to: whisperFormat)
+        if audioConverter == nil {
+            print("AudioManager Error: Could not create AVAudioConverter from \(inputFormat) to \(whisperFormat)")
+        }
+        
+        inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, time in
+            self?.processAudioBuffer(buffer)
+        }
+        print("AudioManager: Tap installed successfully")
         
         do {
-            audioRecorder = try AVAudioRecorder(url: url, settings: settings)
-            audioRecorder?.delegate = self
-            audioRecorder?.isMeteringEnabled = true
-            audioRecorder?.record()
-            
+            try engine.start()
+            print("AudioManager: Audio Engine started successfully")
             isRecording = true
-            recordingDuration = 0.0
-            
-            timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
-                guard let self = self, let recorder = self.audioRecorder, recorder.isRecording else { return }
-                recorder.updateMeters()
-                let db = recorder.averagePower(forChannel: 0)
-                let level = max(0, (db + 50) / 50)
-                self.audioLevel = level
-            }
             
             durationTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
                 guard let self = self else { return }
                 self.recordingDuration += 1.0
             }
         } catch {
-            print("Failed to start recording: \(error)")
+            print("AudioManager Error: Failed to start audio engine: \(error)")
+        }
+    }
+    
+    private func processAudioBuffer(_ buffer: AVAudioPCMBuffer) {
+        guard let converter = audioConverter else { return }
+        
+        let ratio = 16000.0 / buffer.format.sampleRate
+        let targetCapacity = AVAudioFrameCount(Double(buffer.frameLength) * ratio) + 16
+        
+        guard let convertedBuffer = AVAudioPCMBuffer(pcmFormat: whisperFormat, frameCapacity: targetCapacity) else { return }
+        
+        var error: NSError?
+        let inputBlock: AVAudioConverterInputBlock = { _, outStatus in
+            outStatus.pointee = .haveData
+            return buffer
+        }
+        
+        _ = converter.convert(to: convertedBuffer, error: &error, withInputFrom: inputBlock)
+        
+        if let error = error {
+            print("AudioManager Error: Audio conversion failed: \(error)")
+            return
+        }
+        
+        guard convertedBuffer.frameLength > 0, let floatChannelData = convertedBuffer.floatChannelData else { return }
+        let frameCount = Int(convertedBuffer.frameLength)
+        let samples = Array(UnsafeBufferPointer(start: floatChannelData[0], count: frameCount))
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, self.isRecording else { return }
+            self.recordedSamples.append(contentsOf: samples)
+            print("AudioManager: Appended \(samples.count) samples (Total: \(self.recordedSamples.count))")
+            
+            // Calculate audio level (RMS)
+            var sum: Float = 0.0
+            for sample in samples {
+                sum += sample * sample
+            }
+            let rms = sqrt(sum / Float(samples.count))
+            self.audioLevel = min(1.0, rms * 5.0)
         }
     }
     
     func stopRecording() -> URL? {
-        timer?.invalidate()
+        print("AudioManager: stopRecording called")
         durationTimer?.invalidate()
-        timer = nil
         durationTimer = nil
-        audioRecorder?.stop()
+        
+        audioEngine?.inputNode.removeTap(onBus: 0)
+        audioEngine?.stop()
+        audioEngine = nil
+        audioConverter = nil
+        
         isRecording = false
         audioLevel = 0.0
+        
+        saveRecordedSamplesToDisk()
         return recordingURL
+    }
+    
+    private func saveRecordedSamplesToDisk() {
+        guard let url = recordingURL, !recordedSamples.isEmpty else { return }
+        print("AudioManager: Saving \(recordedSamples.count) samples to disk: \(url.path)")
+        do {
+            let file = try AVAudioFile(forWriting: url, settings: whisperFormat.settings)
+            guard let buffer = AVAudioPCMBuffer(pcmFormat: whisperFormat, frameCapacity: AVAudioFrameCount(recordedSamples.count)) else { return }
+            buffer.frameLength = AVAudioFrameCount(recordedSamples.count)
+            if let floatChannelData = buffer.floatChannelData {
+                for i in 0..<recordedSamples.count {
+                    floatChannelData[0][i] = recordedSamples[i]
+                }
+            }
+            try file.write(from: buffer)
+            print("AudioManager: Saved WAV successfully")
+        } catch {
+            print("AudioManager Error: Failed to save audio samples: \(error)")
+        }
     }
     
     static func loadAudioData(from url: URL) throws -> [Float] {

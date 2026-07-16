@@ -23,7 +23,7 @@ class Whisper {
         }
     }
     
-    func transcribe(audioFrames: [Float]) async throws -> String {
+    func transcribe(audioFrames: [Float], isCancelled: UnsafePointer<Bool>? = nil) async throws -> String {
         guard let ctx = ctx else {
             throw NSError(
                 domain: "Whisper", 
@@ -39,6 +39,15 @@ class Whisper {
             params.print_realtime = false
             params.print_special = false
             params.print_timestamps = false
+            
+            if let isCancelled = isCancelled {
+                let callback: @convention(c) (UnsafeMutableRawPointer?) -> Bool = { userData in
+                    guard let userData = userData else { return false }
+                    return userData.assumingMemoryBound(to: Bool.self).pointee
+                }
+                params.abort_callback = callback
+                params.abort_callback_user_data = UnsafeMutableRawPointer(mutating: isCancelled)
+            }
             
             // Set language to auto-detect safely
             return try "auto".withCString { langPtr in

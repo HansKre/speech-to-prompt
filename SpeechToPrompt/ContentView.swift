@@ -4,8 +4,11 @@ struct ContentView: View {
     @StateObject private var modelManager = ModelManager()
     @StateObject private var audioManager = AudioManager()
     @StateObject private var whisperManager = WhisperManager()
+    @StateObject private var diagnosticsManager = DiagnosticsManager.shared
     
     @State private var copyFeedback = false
+    @State private var transcriptionTask: Task<Void, Never>? = nil
+    @State private var showDiagnostics = false
     
     var body: some View {
         ZStack {
@@ -49,6 +52,14 @@ struct ContentView: View {
                         }
                     }
                     Spacer()
+                    
+                    if modelManager.isDownloaded {
+                        Button(action: { showDiagnostics = true }) {
+                            Label("Diagnostics", systemImage: "terminal.fill")
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
                 }
                 .padding(.horizontal)
                 
@@ -65,6 +76,9 @@ struct ContentView: View {
             .padding(30)
         }
         .frame(minWidth: 550, minHeight: 480)
+        .sheet(isPresented: $showDiagnostics) {
+            diagnosticsView
+        }
     }
     
     // MARK: - Model Download View
@@ -191,7 +205,24 @@ struct ContentView: View {
                 
                 // Transcription status & info
                 VStack(alignment: .leading, spacing: 8) {
-                    if whisperManager.isTranscribing {
+                    if audioManager.isRecording {
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 8, height: 8)
+                                .opacity(audioManager.recordingDuration.truncatingRemainder(dividingBy: 2) == 0 ? 0.3 : 1.0)
+                                .animation(.easeInOut(duration: 0.5), value: audioManager.recordingDuration)
+                            Text("Recording...")
+                                .font(.body)
+                                .foregroundColor(.red)
+                            
+                            if whisperManager.isTranscribing {
+                                ProgressView()
+                                    .controlSize(.small)
+                                    .scaleEffect(0.8)
+                            }
+                        }
+                    } else if whisperManager.isTranscribing {
                         HStack(spacing: 12) {
                             ProgressView()
                                 .controlSize(.small)
@@ -199,10 +230,6 @@ struct ContentView: View {
                                 .font(.body)
                                 .italic()
                         }
-                    } else if audioManager.isRecording {
-                        Text("Recording from microphone...")
-                            .font(.body)
-                            .foregroundColor(.red)
                     } else {
                         Text("Click the microphone to start recording.")
                             .font(.body)
@@ -274,6 +301,9 @@ struct ContentView: View {
     // MARK: - Logic Helpers
     func toggleRecording() {
         if audioManager.isRecording {
+            transcriptionTask?.cancel()
+            transcriptionTask = nil
+            
             guard let url = audioManager.stopRecording() else { return }
             Task {
                 await whisperManager.transcribeAudio(fileURL: url, modelURL: modelManager.localModelURL)
@@ -281,6 +311,34 @@ struct ContentView: View {
         } else {
             whisperManager.clearResult()
             audioManager.startRecording()
+            startLiveTranscriptionLoop()
+        }
+    }
+    
+    func startLiveTranscriptionLoop() {
+        print("ContentView: startLiveTranscriptionLoop started")
+        transcriptionTask = Task {
+            // Wait for some initial audio to accumulate
+            try? await Task.sleep(for: .seconds(1.0))
+            
+            var lastTranscribedSampleCount = 0
+            
+            while !Task.isCancelled && audioManager.isRecording {
+                let currentSamples = audioManager.recordedSamples
+                print("ContentView Live Loop: Samples count = \(currentSamples.count), Last count = \(lastTranscribedSampleCount)")
+                
+                // Only transcribe if we have new samples (e.g., at least 0.5s of new audio)
+                // 16000 samples = 1 second
+                if currentSamples.count > lastTranscribedSampleCount + 8000 {
+                    lastTranscribedSampleCount = currentSamples.count
+                    print("ContentView Live Loop: Requesting live transcription with \(currentSamples.count) samples")
+                    await whisperManager.transcribeLive(samples: currentSamples, modelURL: modelManager.localModelURL)
+                }
+                
+                // Check/poll every 1 second
+                try? await Task.sleep(for: .seconds(1.0))
+            }
+            print("ContentView: startLiveTranscriptionLoop finished/cancelled")
         }
     }
     
@@ -303,5 +361,60 @@ struct ContentView: View {
                 copyFeedback = false
             }
         }
+    }
+    
+    // MARK: - Diagnostics View Sheet
+    var diagnosticsView: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Text("System Diagnostics")
+                    .font(.title2.bold())
+                Spacer()
+                Button("Done") {
+                    showDiagnostics = false
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text("System Configuration:")
+                    .font(.headline)
+                Text(diagnosticsManager.systemInfo)
+                    .font(.system(.body, design: .monospaced))
+                    .padding(8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.primary.opacity(0.05))
+                    .cornerRadius(6)
+            }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Whisper/GGML Engine Logs:")
+                        .font(.headline)
+                    Spacer()
+                    Button("Clear Logs") {
+                        diagnosticsManager.clearLogs()
+                    }
+                    .buttonStyle(.borderless)
+                }
+                
+                ScrollView {
+                    Text(diagnosticsManager.logOutput.isEmpty ? "No logs captured yet. Start recording to generate logs." : diagnosticsManager.logOutput)
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(nsColor: .textBackgroundColor).opacity(0.1))
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                )
+            }
+        }
+        .padding()
+        .frame(minWidth: 600, minHeight: 500)
     }
 }
