@@ -14,15 +14,21 @@
 		93C5738F9647807B954872A7 /* SwiftWhisper in Frameworks */ = {isa = PBXBuildFile; productRef = 5B76FD8266D5532BFCFFFA23 /* SwiftWhisper */; };
 		9E7229651AA8464A549AE4D7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 66E66185A073565AD3B1315F /* Assets.xcassets */; };
 		9ECDB17D96B95CE8CFC9E0ED /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D07F79A17B54DEEA78E1DA7 /* AudioManager.swift */; };
+		A116557220CB6A371B19364F /* LLMManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E7D54AB0890E8AAA6FFAD54 /* LLMManager.swift */; };
+		A77544820EAC358D5A835CB1 /* DiagnosticsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71A35C652F8965D277AE8979 /* DiagnosticsManager.swift */; };
+		D999A8A6290BBDF078E0B772 /* Whisper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFA67D48361DF2C1BD69D9D /* Whisper.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1E7D54AB0890E8AAA6FFAD54 /* LLMManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMManager.swift; sourceTree = "<group>"; };
 		35706CA3DE9387F64A0A6814 /* WhisperManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperManager.swift; sourceTree = "<group>"; };
 		39FAACB064977C6BF02F506A /* SpeechToPrompt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpeechToPrompt.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5D07F79A17B54DEEA78E1DA7 /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
 		66E66185A073565AD3B1315F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		71A35C652F8965D277AE8979 /* DiagnosticsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsManager.swift; sourceTree = "<group>"; };
 		77ACB24A8A27239F95E893E9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A70E32010DFC384E22957C5E /* ModelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelManager.swift; sourceTree = "<group>"; };
+		AFFA67D48361DF2C1BD69D9D /* Whisper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Whisper.swift; sourceTree = "<group>"; };
 		EAC8B1D41766E7725A451AC7 /* SpeechToPrompt.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SpeechToPrompt.entitlements; sourceTree = "<group>"; };
 		F82BD2820835CA1BA1B2015F /* SpeechToPromptApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechToPromptApp.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -45,9 +51,12 @@
 				66E66185A073565AD3B1315F /* Assets.xcassets */,
 				5D07F79A17B54DEEA78E1DA7 /* AudioManager.swift */,
 				77ACB24A8A27239F95E893E9 /* ContentView.swift */,
+				71A35C652F8965D277AE8979 /* DiagnosticsManager.swift */,
+				1E7D54AB0890E8AAA6FFAD54 /* LLMManager.swift */,
 				A70E32010DFC384E22957C5E /* ModelManager.swift */,
 				EAC8B1D41766E7725A451AC7 /* SpeechToPrompt.entitlements */,
 				F82BD2820835CA1BA1B2015F /* SpeechToPromptApp.swift */,
+				AFFA67D48361DF2C1BD69D9D /* Whisper.swift */,
 				35706CA3DE9387F64A0A6814 /* WhisperManager.swift */,
 			);
 			path = SpeechToPrompt;
@@ -143,8 +152,11 @@
 			files = (
 				9ECDB17D96B95CE8CFC9E0ED /* AudioManager.swift in Sources */,
 				5BABEBFF86AA234E14DFDCF6 /* ContentView.swift in Sources */,
+				A77544820EAC358D5A835CB1 /* DiagnosticsManager.swift in Sources */,
+				A116557220CB6A371B19364F /* LLMManager.swift in Sources */,
 				4EF533BC53CF6C410D7D0E63 /* ModelManager.swift in Sources */,
 				0E6044F28081680C7AA7A4CC /* SpeechToPromptApp.swift in Sources */,
+				D999A8A6290BBDF078E0B772 /* Whisper.swift in Sources */,
 				51421BDB5FAA3E4F6EAD023C /* WhisperManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

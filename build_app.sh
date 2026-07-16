@@ -26,6 +26,7 @@ if [ -d ".build/release/whisper_whisper.bundle" ]; then
     cp -R ".build/release/whisper_whisper.bundle" "$APP_DIR/Contents/Resources/"
 fi
 
+
 # Create Info.plist
 cat <<EOF > "$APP_DIR/Contents/Info.plist"
 <?xml version="1.0" encoding="UTF-8"?>

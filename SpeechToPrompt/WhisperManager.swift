@@ -5,8 +5,15 @@ class WhisperManager: ObservableObject {
     @Published var transcriptionResult: String = ""
     @Published var statusMessage: String = ""
     
+    private var committedTranscription: String = ""
     private var whisper: Whisper?
     private var currentCancellationPointer: UnsafeMutablePointer<Bool>?
+    
+    func startNewSession() {
+        if !transcriptionResult.isEmpty {
+            committedTranscription = transcriptionResult
+        }
+    }
     
     func transcribeAudio(fileURL: URL, modelURL: URL) async {
         // Cancel any active live transcription
@@ -37,9 +44,16 @@ class WhisperManager: ObservableObject {
             }
             
             let resultText = try await whisper!.transcribe(audioFrames: audioFrames)
+            let trimmedResult = resultText.trimmingCharacters(in: .whitespacesAndNewlines)
             
             await MainActor.run {
-                self.transcriptionResult = resultText.trimmingCharacters(in: .whitespacesAndNewlines)
+                if self.committedTranscription.isEmpty {
+                    self.transcriptionResult = trimmedResult
+                } else if trimmedResult.isEmpty {
+                    self.transcriptionResult = self.committedTranscription
+                } else {
+                    self.transcriptionResult = self.committedTranscription + "\n\n" + trimmedResult
+                }
                 self.isTranscribing = false
                 self.statusMessage = ""
             }
@@ -78,6 +92,7 @@ class WhisperManager: ObservableObject {
              let startTime = Date()
              let resultText = try await whisper!.transcribe(audioFrames: samples, isCancelled: cancelPtr)
              let duration = Date().timeIntervalSince(startTime)
+             let trimmedResult = resultText.trimmingCharacters(in: .whitespacesAndNewlines)
              
              print("WhisperManager: Live transcription finished in \(String(format: "%.2f", duration))s. Result: \"\(resultText)\"")
              
@@ -85,7 +100,13 @@ class WhisperManager: ObservableObject {
              self.currentCancellationPointer = nil
              
              await MainActor.run {
-                 self.transcriptionResult = resultText.trimmingCharacters(in: .whitespacesAndNewlines)
+                 if self.committedTranscription.isEmpty {
+                     self.transcriptionResult = trimmedResult
+                 } else if trimmedResult.isEmpty {
+                     self.transcriptionResult = self.committedTranscription
+                 } else {
+                     self.transcriptionResult = self.committedTranscription + "\n\n" + trimmedResult
+                 }
                  self.isTranscribing = false
              }
          } catch {
@@ -109,6 +130,7 @@ class WhisperManager: ObservableObject {
      }
      
      func clearResult() {
+         committedTranscription = ""
          transcriptionResult = ""
      }
  }
