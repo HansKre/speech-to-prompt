@@ -688,19 +688,12 @@ struct ContentView: View {
             }
             .padding(.bottom, 10)
             
-            Form {
-                Picker("API Provider", selection: $apiTypeSetting) {
-                    Text("Azure OpenAI").tag("azure")
-                    Text("Standard OpenAI").tag("openai")
-                }
-                .pickerStyle(.segmented)
-                .padding(.bottom, 10)
-                
+            VStack(alignment: .leading, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("API URL Endpoint")
                         .font(.caption.bold())
                         .foregroundColor(.secondary)
-                    TextField("e.g. https://your-resource.openai.azure.com", text: $apiUrlSetting)
+                    TextField("", text: $apiUrlSetting)
                         .textFieldStyle(.roundedBorder)
                 }
                 
@@ -713,21 +706,19 @@ struct ContentView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(apiTypeSetting == "azure" ? "Deployment Name (Model)" : "Model Name")
+                    Text("Deployment Name (Model)")
                         .font(.caption.bold())
                         .foregroundColor(.secondary)
-                    TextField(apiTypeSetting == "azure" ? "e.g. gpt-4o" : "gpt-4o", text: $modelSetting)
+                    TextField("", text: $modelSetting)
                         .textFieldStyle(.roundedBorder)
                 }
                 
-                if apiTypeSetting == "azure" {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("API Version")
-                            .font(.caption.bold())
-                            .foregroundColor(.secondary)
-                        TextField("2024-10-21", text: $apiVersionSetting)
-                            .textFieldStyle(.roundedBorder)
-                    }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("API Version")
+                        .font(.caption.bold())
+                        .foregroundColor(.secondary)
+                    TextField("2024-10-21", text: $apiVersionSetting)
+                        .textFieldStyle(.roundedBorder)
                 }
             }
             
@@ -744,7 +735,7 @@ struct ContentView: View {
             .padding(.top, 10)
         }
         .padding()
-        .frame(width: 480, height: 420)
+        .frame(width: 480, height: 380)
         .onAppear {
             loadSettingsFromUserDefaults()
         }
@@ -752,7 +743,7 @@ struct ContentView: View {
     
     func loadSettingsFromUserDefaults() {
         let defaults = UserDefaults.standard
-        apiTypeSetting = defaults.string(forKey: "LLM_apiType") ?? "azure"
+        apiTypeSetting = "azure"
         apiUrlSetting = defaults.string(forKey: "LLM_apiUrl") ?? ""
         apiKeySetting = defaults.string(forKey: "LLM_apiKey") ?? ""
         modelSetting = defaults.string(forKey: "LLM_model") ?? ""
@@ -761,7 +752,7 @@ struct ContentView: View {
     
     func saveSettingsToUserDefaults() {
         let defaults = UserDefaults.standard
-        defaults.set(apiTypeSetting, forKey: "LLM_apiType")
+        defaults.set("azure", forKey: "LLM_apiType")
         defaults.set(apiUrlSetting, forKey: "LLM_apiUrl")
         defaults.set(apiKeySetting, forKey: "LLM_apiKey")
         defaults.set(modelSetting, forKey: "LLM_model")
