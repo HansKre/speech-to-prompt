@@ -1,0 +1,21 @@
+name: SpeechToPrompt
+options:
+  bundleIdPrefix: com.privat
+targets:
+  SpeechToPrompt:
+    type: application
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources: [SpeechToPrompt]
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.privat.SpeechToPrompt
+      MACOSX_DEPLOYMENT_TARGET: "13.0"
+      INFOPLIST_KEY_NSMicrophoneUsageDescription: "This app needs access to the microphone to record your voice for transcription."
+      CODE_SIGN_ENTITLEMENTS: SpeechToPrompt/SpeechToPrompt.entitlements
+    dependencies:
+      - package: SwiftWhisper
+        product: SwiftWhisper
+packages:
+  SwiftWhisper:
+    url: https://github.com/exPHAT/SwiftWhisper.git
+    branch: master

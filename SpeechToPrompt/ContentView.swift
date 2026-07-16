@@ -1,0 +1,307 @@
+import SwiftUI
+
+struct ContentView: View {
+    @StateObject private var modelManager = ModelManager()
+    @StateObject private var audioManager = AudioManager()
+    @StateObject private var whisperManager = WhisperManager()
+    
+    @State private var copyFeedback = false
+    
+    var body: some View {
+        ZStack {
+            // Dark radial background
+            RadialGradient(
+                colors: [Color(nsColor: .windowBackgroundColor).opacity(0.85), Color(nsColor: .underPageBackgroundColor)],
+                center: .center,
+                startRadius: 20,
+                endRadius: 500
+            )
+            .ignoresSafeArea()
+            
+            VStack(spacing: 24) {
+                // Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Speech to Prompt")
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [Color.purple, Color.cyan],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                        
+                        if modelManager.isDownloaded {
+                            HStack(spacing: 6) {
+                                Circle().fill(Color.green).frame(width: 8, height: 8)
+                                Text("Whisper Large v3 Turbo (Metal)")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                        } else {
+                            HStack(spacing: 6) {
+                                Circle().fill(Color.yellow).frame(width: 8, height: 8)
+                                Text("Model Required")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal)
+                
+                Divider().opacity(0.2)
+                
+                if !modelManager.isDownloaded {
+                    // Download View
+                    modelDownloadView
+                } else {
+                    // Recording and Transcription View
+                    mainConsoleView
+                }
+            }
+            .padding(30)
+        }
+        .frame(minWidth: 550, minHeight: 480)
+    }
+    
+    // MARK: - Model Download View
+    var modelDownloadView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            Image(systemName: "icloud.and.arrow.down.fill")
+                .font(.system(size: 64))
+                .foregroundStyle(LinearGradient(colors: [.blue, .purple], startPoint: .top, endPoint: .bottom))
+                .symbolEffect(.bounce.up.byLayer, options: .repeating, value: modelManager.isDownloading)
+            
+            VStack(spacing: 8) {
+                Text("Local Model Required")
+                    .font(.title2.bold())
+                Text("Whisper Large v3 Turbo (~1.5 GB) will be saved to your local Application Support directory for fast, offline transcription.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 20)
+            }
+            
+            if modelManager.isDownloading {
+                VStack(spacing: 12) {
+                    ProgressView(value: modelManager.progress)
+                        .progressViewStyle(.linear)
+                        .tint(Color.purple)
+                        .padding(.horizontal, 40)
+                    
+                    HStack {
+                        Text(String(format: "%.0f%%", modelManager.progress * 100))
+                            .bold()
+                        Spacer()
+                        Text(modelManager.downloadSpeed)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("ETA: \(modelManager.timeRemaining)")
+                            .foregroundColor(.secondary)
+                    }
+                    .font(.caption)
+                    .padding(.horizontal, 40)
+                    
+                    Button(action: {
+                        modelManager.cancelDownload()
+                    }) {
+                        Text("Cancel Download")
+                            .font(.body.bold())
+                            .foregroundColor(.red)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 16)
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                }
+            } else {
+                VStack(spacing: 12) {
+                    if let err = modelManager.errorMessage {
+                        Text("Error: \(err)")
+                            .foregroundColor(.red)
+                            .font(.caption)
+                            .multilineTextAlignment(.center)
+                    }
+                    
+                    Button(action: {
+                        modelManager.startDownload()
+                    }) {
+                        Text("Download Model")
+                            .font(.body.bold())
+                            .foregroundColor(.white)
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 24)
+                            .background(
+                                LinearGradient(colors: [.purple, .blue], startPoint: .leading, endPoint: .trailing)
+                            )
+                            .cornerRadius(10)
+                            .shadow(color: .purple.opacity(0.3), radius: 8, x: 0, y: 4)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            Spacer()
+        }
+    }
+    
+    // MARK: - Main Application Console
+    var mainConsoleView: some View {
+        VStack(spacing: 24) {
+            // Audio recording state
+            HStack(spacing: 40) {
+                // Record Button & Equalizer animation
+                VStack(spacing: 12) {
+                    ZStack {
+                        // Pulsing background rings
+                        Circle()
+                            .stroke(Color.purple.opacity(audioManager.isRecording ? 0.3 : 0.1), lineWidth: 2)
+                            .frame(width: 100, height: 100)
+                            .scaleEffect(audioManager.isRecording ? CGFloat(1.0 + audioManager.audioLevel * 0.4) : 1.0)
+                            .animation(.easeOut(duration: 0.1), value: audioManager.audioLevel)
+                        
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: audioManager.isRecording ? [.red, .orange] : [.purple, .indigo],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .frame(width: 80, height: 80)
+                            .shadow(color: (audioManager.isRecording ? Color.red : Color.purple).opacity(0.4), radius: 10, x: 0, y: 6)
+                        
+                        Image(systemName: audioManager.isRecording ? "stop.fill" : "mic.fill")
+                            .font(.system(size: 32, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    .onTapGesture {
+                        toggleRecording()
+                    }
+                    
+                    Text(audioManager.isRecording ? formatDuration(audioManager.recordingDuration) : "Ready")
+                        .font(.system(.body, design: .monospaced))
+                        .fontWeight(.bold)
+                        .foregroundColor(audioManager.isRecording ? .red : .secondary)
+                }
+                
+                // Transcription status & info
+                VStack(alignment: .leading, spacing: 8) {
+                    if whisperManager.isTranscribing {
+                        HStack(spacing: 12) {
+                            ProgressView()
+                                .controlSize(.small)
+                            Text(whisperManager.statusMessage)
+                                .font(.body)
+                                .italic()
+                        }
+                    } else if audioManager.isRecording {
+                        Text("Recording from microphone...")
+                            .font(.body)
+                            .foregroundColor(.red)
+                    } else {
+                        Text("Click the microphone to start recording.")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    if !audioManager.permissionGranted {
+                        Text("⚠️ Microphone access denied. Check System Settings.")
+                            .font(.caption)
+                            .foregroundColor(.red)
+                    }
+                }
+                Spacer()
+            }
+            .padding(.horizontal)
+            
+            // Transcription display area
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("Transcription")
+                        .font(.headline)
+                    Spacer()
+                    
+                    if !whisperManager.transcriptionResult.isEmpty {
+                        Button(action: copyToClipboard) {
+                            HStack(spacing: 4) {
+                                Image(systemName: copyFeedback ? "checkmark.circle.fill" : "doc.on.doc")
+                                Text(copyFeedback ? "Copied!" : "Copy")
+                            }
+                            .foregroundColor(copyFeedback ? .green : .primary)
+                        }
+                        .buttonStyle(.borderless)
+                        
+                        Button(action: { whisperManager.clearResult() }) {
+                            Text("Clear")
+                                .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                }
+                
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 8) {
+                        if whisperManager.transcriptionResult.isEmpty {
+                            Text("No transcription yet. Speak into your microphone and click stop.")
+                                .foregroundColor(.secondary)
+                                .italic()
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        } else {
+                            Text(whisperManager.transcriptionResult)
+                                .font(.system(.body, design: .serif))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .textSelection(.enabled)
+                        }
+                    }
+                    .padding()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(nsColor: .textBackgroundColor).opacity(0.15))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                )
+            }
+        }
+    }
+    
+    // MARK: - Logic Helpers
+    func toggleRecording() {
+        if audioManager.isRecording {
+            guard let url = audioManager.stopRecording() else { return }
+            Task {
+                await whisperManager.transcribeAudio(fileURL: url, modelURL: modelManager.localModelURL)
+            }
+        } else {
+            whisperManager.clearResult()
+            audioManager.startRecording()
+        }
+    }
+    
+    func formatDuration(_ duration: TimeInterval) -> String {
+        let minutes = Int(duration) / 60
+        let seconds = Int(duration) % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+    
+    func copyToClipboard() {
+        let pasteboard = NSPasteboard.general
+        pasteboard.declareTypes([.string], owner: nil)
+        pasteboard.setString(whisperManager.transcriptionResult, forType: .string)
+        
+        withAnimation {
+            copyFeedback = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation {
+                copyFeedback = false
+            }
+        }
+    }
+}

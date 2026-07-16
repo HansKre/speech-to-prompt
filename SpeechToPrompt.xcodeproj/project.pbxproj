@@ -1,0 +1,349 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0E6044F28081680C7AA7A4CC /* SpeechToPromptApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F82BD2820835CA1BA1B2015F /* SpeechToPromptApp.swift */; };
+		4EF533BC53CF6C410D7D0E63 /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70E32010DFC384E22957C5E /* ModelManager.swift */; };
+		51421BDB5FAA3E4F6EAD023C /* WhisperManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35706CA3DE9387F64A0A6814 /* WhisperManager.swift */; };
+		5BABEBFF86AA234E14DFDCF6 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77ACB24A8A27239F95E893E9 /* ContentView.swift */; };
+		93C5738F9647807B954872A7 /* SwiftWhisper in Frameworks */ = {isa = PBXBuildFile; productRef = 5B76FD8266D5532BFCFFFA23 /* SwiftWhisper */; };
+		9E7229651AA8464A549AE4D7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 66E66185A073565AD3B1315F /* Assets.xcassets */; };
+		9ECDB17D96B95CE8CFC9E0ED /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D07F79A17B54DEEA78E1DA7 /* AudioManager.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		35706CA3DE9387F64A0A6814 /* WhisperManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperManager.swift; sourceTree = "<group>"; };
+		39FAACB064977C6BF02F506A /* SpeechToPrompt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpeechToPrompt.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5D07F79A17B54DEEA78E1DA7 /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
+		66E66185A073565AD3B1315F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		77ACB24A8A27239F95E893E9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A70E32010DFC384E22957C5E /* ModelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelManager.swift; sourceTree = "<group>"; };
+		EAC8B1D41766E7725A451AC7 /* SpeechToPrompt.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SpeechToPrompt.entitlements; sourceTree = "<group>"; };
+		F82BD2820835CA1BA1B2015F /* SpeechToPromptApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechToPromptApp.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		822890A93FE6821E63A3514D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				93C5738F9647807B954872A7 /* SwiftWhisper in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		10F561817EBF50E54EBFFED7 /* SpeechToPrompt */ = {
+			isa = PBXGroup;
+			children = (
+				66E66185A073565AD3B1315F /* Assets.xcassets */,
+				5D07F79A17B54DEEA78E1DA7 /* AudioManager.swift */,
+				77ACB24A8A27239F95E893E9 /* ContentView.swift */,
+				A70E32010DFC384E22957C5E /* ModelManager.swift */,
+				EAC8B1D41766E7725A451AC7 /* SpeechToPrompt.entitlements */,
+				F82BD2820835CA1BA1B2015F /* SpeechToPromptApp.swift */,
+				35706CA3DE9387F64A0A6814 /* WhisperManager.swift */,
+			);
+			path = SpeechToPrompt;
+			sourceTree = "<group>";
+		};
+		37575EA7C46D0C79815E6C67 = {
+			isa = PBXGroup;
+			children = (
+				10F561817EBF50E54EBFFED7 /* SpeechToPrompt */,
+				8C584A71F33FF22FD0EC4F0B /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		8C584A71F33FF22FD0EC4F0B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				39FAACB064977C6BF02F506A /* SpeechToPrompt.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		57AC4979C176534F1070EBE2 /* SpeechToPrompt */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3F0857CA4001E0BD196F4802 /* Build configuration list for PBXNativeTarget "SpeechToPrompt" */;
+			buildPhases = (
+				BFBC028FADD3C352776011D9 /* Sources */,
+				C65B7B0897AE4EFDA18E44F2 /* Resources */,
+				822890A93FE6821E63A3514D /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SpeechToPrompt;
+			packageProductDependencies = (
+				5B76FD8266D5532BFCFFFA23 /* SwiftWhisper */,
+			);
+			productName = SpeechToPrompt;
+			productReference = 39FAACB064977C6BF02F506A /* SpeechToPrompt.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4AA80B97E9A12E95AEF80A37 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = BFCF0B701E5AFE8BB37C09B3 /* Build configuration list for PBXProject "SpeechToPrompt" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 37575EA7C46D0C79815E6C67;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				7494A17172D1D57C3C6B72AA /* XCRemoteSwiftPackageReference "SwiftWhisper" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 8C584A71F33FF22FD0EC4F0B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				57AC4979C176534F1070EBE2 /* SpeechToPrompt */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C65B7B0897AE4EFDA18E44F2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9E7229651AA8464A549AE4D7 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		BFBC028FADD3C352776011D9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9ECDB17D96B95CE8CFC9E0ED /* AudioManager.swift in Sources */,
+				5BABEBFF86AA234E14DFDCF6 /* ContentView.swift in Sources */,
+				4EF533BC53CF6C410D7D0E63 /* ModelManager.swift in Sources */,
+				0E6044F28081680C7AA7A4CC /* SpeechToPromptApp.swift in Sources */,
+				51421BDB5FAA3E4F6EAD023C /* WhisperManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1704990FAB53BEB012C7F982 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		74B1A1D71B36081F230F89A2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = SpeechToPrompt/SpeechToPrompt.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs access to the microphone to record your voice for transcription.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.privat.SpeechToPrompt;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		F6E2D55578D4DD6E76DAB86F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		FE03DE77217DEEC97B0DF1C2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = SpeechToPrompt/SpeechToPrompt.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app needs access to the microphone to record your voice for transcription.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.privat.SpeechToPrompt;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3F0857CA4001E0BD196F4802 /* Build configuration list for PBXNativeTarget "SpeechToPrompt" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FE03DE77217DEEC97B0DF1C2 /* Debug */,
+				74B1A1D71B36081F230F89A2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		BFCF0B701E5AFE8BB37C09B3 /* Build configuration list for PBXProject "SpeechToPrompt" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1704990FAB53BEB012C7F982 /* Debug */,
+				F6E2D55578D4DD6E76DAB86F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		7494A17172D1D57C3C6B72AA /* XCRemoteSwiftPackageReference "SwiftWhisper" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/exPHAT/SwiftWhisper.git";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		5B76FD8266D5532BFCFFFA23 /* SwiftWhisper */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7494A17172D1D57C3C6B72AA /* XCRemoteSwiftPackageReference "SwiftWhisper" */;
+			productName = SwiftWhisper;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 4AA80B97E9A12E95AEF80A37 /* Project object */;
+}
