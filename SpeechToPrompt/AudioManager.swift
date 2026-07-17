@@ -43,6 +43,8 @@ class AudioManager: NSObject, ObservableObject {
             return
         }
         
+        SpotifyManager.shared.pausePlaybackIfNeeded()
+        
         recordedSamples = []
         audioLevel = 0.0
         recordingDuration = 0.0
@@ -50,6 +52,7 @@ class AudioManager: NSObject, ObservableObject {
         audioEngine = AVAudioEngine()
         guard let engine = audioEngine else {
             print("AudioManager Error: Could not initialize AVAudioEngine")
+            SpotifyManager.shared.resumePlaybackIfNeeded()
             return
         }
         let inputNode = engine.inputNode
@@ -58,6 +61,7 @@ class AudioManager: NSObject, ObservableObject {
         print("AudioManager: Microphone outputFormat = \(inputFormat)")
         guard inputFormat.sampleRate > 0 else {
             print("AudioManager Error: Microphone outputFormat sample rate is 0.0")
+            SpotifyManager.shared.resumePlaybackIfNeeded()
             return
         }
         
@@ -82,6 +86,7 @@ class AudioManager: NSObject, ObservableObject {
             }
         } catch {
             print("AudioManager Error: Failed to start audio engine: \(error)")
+            SpotifyManager.shared.resumePlaybackIfNeeded()
         }
     }
     
@@ -139,6 +144,7 @@ class AudioManager: NSObject, ObservableObject {
         audioLevel = 0.0
         
         saveRecordedSamplesToDisk()
+        SpotifyManager.shared.resumePlaybackIfNeeded()
         return recordingURL
     }
     

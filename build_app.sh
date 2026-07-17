@@ -45,10 +45,16 @@ cat <<EOF > "$APP_DIR/Contents/Info.plist"
     <string>1.0</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>This app needs access to the microphone to record your voice for transcription.</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>This app needs to control Spotify to pause playback during audio recording.</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
 </dict>
 </plist>
 EOF
+
+# Codesign app bundle with entitlements
+echo "Codesigning app bundle with entitlements..."
+codesign --force --sign - --entitlements SpeechToPrompt/SpeechToPrompt.entitlements "$APP_DIR/Contents/MacOS/SpeechToPrompt"
 
 echo "Done! You can now run the app with: open SpeechToPrompt.app"

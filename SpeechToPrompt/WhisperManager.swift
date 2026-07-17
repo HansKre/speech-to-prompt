@@ -2,6 +2,7 @@ import Foundation
 
 class WhisperManager: ObservableObject {
     @Published var isTranscribing = false
+    @Published var isProcessingFinalAudio = false
     @Published var transcriptionResult: String = ""
     @Published var statusMessage: String = ""
     
@@ -55,12 +56,14 @@ class WhisperManager: ObservableObject {
                     self.transcriptionResult = self.committedTranscription + "\n\n" + trimmedResult
                 }
                 self.isTranscribing = false
+                self.isProcessingFinalAudio = false
                 self.statusMessage = ""
             }
         } catch {
             await MainActor.run {
                 self.statusMessage = "Transcription failed: \(error.localizedDescription)"
                 self.isTranscribing = false
+                self.isProcessingFinalAudio = false
             }
         }
      }

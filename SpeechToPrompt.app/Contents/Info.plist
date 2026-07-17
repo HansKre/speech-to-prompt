@@ -14,6 +14,8 @@
     <string>1.0</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>This app needs access to the microphone to record your voice for transcription.</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>This app needs to control Spotify to pause playback during audio recording.</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
 </dict>

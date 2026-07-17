@@ -56,6 +56,17 @@ class DiagnosticsManager: ObservableObject {
         }, nil)
     }
     
+    func log(_ message: String) {
+        let formattedMessage = "[\(Date().description)] \(message)\n"
+        print(formattedMessage, terminator: "")
+        DispatchQueue.main.async {
+            self.logOutput += formattedMessage
+        }
+        if let data = formattedMessage.data(using: .utf8) {
+            self.fileHandle?.write(data)
+        }
+    }
+    
     func clearLogs() {
         logOutput = ""
         setupLogFile() // resets file

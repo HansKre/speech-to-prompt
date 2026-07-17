@@ -11,6 +11,7 @@ targets:
       PRODUCT_BUNDLE_IDENTIFIER: com.privat.SpeechToPrompt
       MACOSX_DEPLOYMENT_TARGET: "13.0"
       INFOPLIST_KEY_NSMicrophoneUsageDescription: "This app needs access to the microphone to record your voice for transcription."
+      INFOPLIST_KEY_NSAppleEventsUsageDescription: "This app needs to control Spotify to pause playback during audio recording."
       CODE_SIGN_ENTITLEMENTS: SpeechToPrompt/SpeechToPrompt.entitlements
     dependencies:
       - package: SwiftWhisper

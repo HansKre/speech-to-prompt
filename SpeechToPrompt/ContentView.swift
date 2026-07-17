@@ -18,6 +18,7 @@ struct ContentView: View {
     @State private var apiKeySetting = ""
     @State private var modelSetting = ""
     @State private var apiVersionSetting = "2024-10-21"
+    @State private var pauseSpotifySetting = true
     
     var body: some View {
         ZStack {
@@ -243,7 +244,7 @@ struct ContentView: View {
                                     .scaleEffect(0.8)
                             }
                         }
-                    } else if whisperManager.isTranscribing {
+                    } else if whisperManager.isTranscribing || whisperManager.isProcessingFinalAudio {
                         HStack(spacing: 12) {
                             ProgressView()
                                 .controlSize(.small)
@@ -276,7 +277,7 @@ struct ContentView: View {
                     
                     if !whisperManager.transcriptionResult.isEmpty {
                         // Improve with AI Button
-                        if !audioManager.isRecording && !whisperManager.isTranscribing {
+                        if !audioManager.isRecording && !whisperManager.isTranscribing && !whisperManager.isProcessingFinalAudio {
                             Button(action: {
                                 Task {
                                     await llmManager.improvePrompt(text: whisperManager.transcriptionResult)
@@ -544,7 +545,14 @@ struct ContentView: View {
             transcriptionTask?.cancel()
             transcriptionTask = nil
             
-            guard let url = audioManager.stopRecording() else { return }
+            whisperManager.isProcessingFinalAudio = true
+            whisperManager.statusMessage = "Preparing transcription..."
+            
+            guard let url = audioManager.stopRecording() else {
+                whisperManager.isProcessingFinalAudio = false
+                whisperManager.statusMessage = ""
+                return
+            }
             Task {
                 await whisperManager.transcribeAudio(fileURL: url, modelURL: modelManager.localModelURL)
             }
@@ -720,6 +728,12 @@ struct ContentView: View {
                     TextField("2024-10-21", text: $apiVersionSetting)
                         .textFieldStyle(.roundedBorder)
                 }
+                
+                Divider()
+                    .padding(.vertical, 4)
+                
+                Toggle("Pause Spotify playback during recording", isOn: $pauseSpotifySetting)
+                    .toggleStyle(.checkbox)
             }
             
             HStack {
@@ -735,7 +749,7 @@ struct ContentView: View {
             .padding(.top, 10)
         }
         .padding()
-        .frame(width: 480, height: 380)
+        .frame(width: 480, height: 430)
         .onAppear {
             loadSettingsFromUserDefaults()
         }
@@ -748,6 +762,12 @@ struct ContentView: View {
         apiKeySetting = defaults.string(forKey: "LLM_apiKey") ?? ""
         modelSetting = defaults.string(forKey: "LLM_model") ?? ""
         apiVersionSetting = defaults.string(forKey: "LLM_apiVersion") ?? "2024-10-21"
+        
+        if defaults.object(forKey: "pauseSpotifySetting") == nil {
+            pauseSpotifySetting = true
+        } else {
+            pauseSpotifySetting = defaults.bool(forKey: "pauseSpotifySetting")
+        }
     }
     
     func saveSettingsToUserDefaults() {
@@ -757,6 +777,7 @@ struct ContentView: View {
         defaults.set(apiKeySetting, forKey: "LLM_apiKey")
         defaults.set(modelSetting, forKey: "LLM_model")
         defaults.set(apiVersionSetting, forKey: "LLM_apiVersion")
+        defaults.set(pauseSpotifySetting, forKey: "pauseSpotifySetting")
         
         llmManager.clearImprovedPrompt()
     }
