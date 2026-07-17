@@ -19,7 +19,7 @@ let package = Package(
                 .product(name: "whisper", package: "whisper.cpp")
             ],
             path: "SpeechToPrompt",
-            exclude: ["SpeechToPrompt.entitlements", "Assets.xcassets"]
+            exclude: ["SpeechToPrompt.entitlements", "Assets.xcassets", "AppIcon.svg", "AppIcon.icns"]
         )
     ]
 )

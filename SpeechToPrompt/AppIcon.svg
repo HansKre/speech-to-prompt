@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+    <linearGradient id="mic" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#e94560"/>
+      <stop offset="100%" style="stop-color:#c23152"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#533483"/>
+      <stop offset="100%" style="stop-color:#0f3460"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background with rounded corners (macOS style) -->
+  <rect width="1024" height="1024" rx="228" ry="228" fill="url(#bg)"/>
+
+  <!-- Subtle inner glow ring -->
+  <circle cx="512" cy="460" r="260" fill="none" stroke="url(#glow)" stroke-width="3" opacity="0.4"/>
+
+  <!-- Sound waves (left) -->
+  <path d="M 280 390 Q 260 460 280 530" fill="none" stroke="#e94560" stroke-width="12" stroke-linecap="round" opacity="0.3"/>
+  <path d="M 240 350 Q 210 460 240 570" fill="none" stroke="#e94560" stroke-width="10" stroke-linecap="round" opacity="0.2"/>
+
+  <!-- Sound waves (right) -->
+  <path d="M 744 390 Q 764 460 744 530" fill="none" stroke="#e94560" stroke-width="12" stroke-linecap="round" opacity="0.3"/>
+  <path d="M 784 350 Q 814 460 784 570" fill="none" stroke="#e94560" stroke-width="10" stroke-linecap="round" opacity="0.2"/>
+
+  <!-- Microphone body -->
+  <rect x="448" y="300" width="128" height="260" rx="64" ry="64" fill="url(#mic)" filter="url(#shadow)"/>
+
+  <!-- Microphone grille lines -->
+  <line x1="470" y1="360" x2="554" y2="360" stroke="#fff" stroke-width="3" opacity="0.2"/>
+  <line x1="470" y1="390" x2="554" y2="390" stroke="#fff" stroke-width="3" opacity="0.2"/>
+  <line x1="470" y1="420" x2="554" y2="420" stroke="#fff" stroke-width="3" opacity="0.2"/>
+  <line x1="470" y1="450" x2="554" y2="450" stroke="#fff" stroke-width="3" opacity="0.2"/>
+  <line x1="470" y1="480" x2="554" y2="480" stroke="#fff" stroke-width="3" opacity="0.2"/>
+
+  <!-- Microphone highlight -->
+  <rect x="468" y="310" width="24" height="200" rx="12" fill="#fff" opacity="0.08"/>
+
+  <!-- Microphone stand arc -->
+  <path d="M 400 520 Q 400 620 512 620 Q 624 620 624 520" fill="none" stroke="#e94560" stroke-width="16" stroke-linecap="round" opacity="0.8"/>
+
+  <!-- Microphone stand pole -->
+  <line x1="512" y1="620" x2="512" y2="680" stroke="#e94560" stroke-width="16" stroke-linecap="round" opacity="0.8"/>
+
+  <!-- Prompt cursor / bracket symbol -->
+  <text x="420" y="810" font-family="SF Mono, Menlo, monospace" font-size="100" font-weight="700" fill="#e94560" opacity="0.9">&gt;_</text>
+
+  <!-- Subtle dots for "text being generated" -->
+  <circle cx="610" cy="780" r="8" fill="#fff" opacity="0.4"/>
+  <circle cx="645" cy="780" r="8" fill="#fff" opacity="0.3"/>
+  <circle cx="680" cy="780" r="8" fill="#fff" opacity="0.2"/>
+</svg>

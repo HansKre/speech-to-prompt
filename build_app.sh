@@ -26,6 +26,9 @@ if [ -d ".build/release/whisper_whisper.bundle" ]; then
     cp -R ".build/release/whisper_whisper.bundle" "$APP_DIR/Contents/Resources/"
 fi
 
+# Copy app icon
+cp "SpeechToPrompt/AppIcon.icns" "$APP_DIR/Contents/Resources/AppIcon.icns"
+
 
 # Create Info.plist
 cat <<EOF > "$APP_DIR/Contents/Info.plist"
@@ -39,6 +42,8 @@ cat <<EOF > "$APP_DIR/Contents/Info.plist"
     <string>com.privat.SpeechToPrompt</string>
     <key>CFBundleName</key>
     <string>SpeechToPrompt</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -55,6 +60,6 @@ EOF
 
 # Codesign app bundle with entitlements
 echo "Codesigning app bundle with entitlements..."
-codesign --force --sign - --entitlements SpeechToPrompt/SpeechToPrompt.entitlements "$APP_DIR/Contents/MacOS/SpeechToPrompt"
+codesign --force --deep --sign - --entitlements SpeechToPrompt/SpeechToPrompt.entitlements "$APP_DIR"
 
 echo "Done! You can now run the app with: open SpeechToPrompt.app"
