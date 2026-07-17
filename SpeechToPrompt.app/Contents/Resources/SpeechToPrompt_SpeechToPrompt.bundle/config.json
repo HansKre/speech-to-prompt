@@ -1,7 +1,0 @@
-{
-  "apiType": "azure",
-  "apiUrl": "https://genai-nexus.api.corpinter.net",
-  "apiKey": "141b03a1-bf3e-4ef5-92c7-a05b9d047a1b",
-  "model": "gpt-5.5",
-  "apiVersion": "2024-10-21"
-}

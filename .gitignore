@@ -1,2 +1,8 @@
 .build/
 whisper.cpp/
+SpeechToPrompt.app/
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+.DS_Store
