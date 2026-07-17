@@ -1,5 +1,4 @@
 .build/
-whisper.cpp/
 SpeechToPrompt.app/
 build/
 DerivedData/
