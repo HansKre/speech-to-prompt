@@ -42,6 +42,25 @@ class ProjectStore: ObservableObject {
             .appendingPathComponent(type == .raw ? "raw.md" : "refined.md")
     }
 
+    func attachmentsDirectoryURL(projectID: UUID, promptID: UUID) -> URL {
+        let dir = promptsBaseURL
+            .appendingPathComponent(projectID.uuidString)
+            .appendingPathComponent(promptID.uuidString)
+            .appendingPathComponent("attachments")
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    func updatePromptAttachments(projectID: UUID? = nil, promptID: UUID? = nil, attachments: [Attachment]) {
+        guard let pID = projectID ?? selectedProjectID,
+              let qID = promptID ?? selectedPromptID,
+              let pIndex = projects.firstIndex(where: { $0.id == pID }),
+              let qIndex = projects[pIndex].prompts.firstIndex(where: { $0.id == qID })
+        else { return }
+        projects[pIndex].prompts[qIndex].attachments = attachments
+        projects[pIndex].prompts[qIndex].updatedAt = Date()
+    }
+
     init() {
         load()
         restoreLastActive()
@@ -186,6 +205,17 @@ class ProjectStore: ObservableObject {
                     withJSONObject: meta, options: [.prettyPrinted, .sortedKeys]
                 ) {
                     try? metaData.write(to: promptDir.appendingPathComponent("meta.json"))
+                }
+
+                let attachmentsURL = promptDir.appendingPathComponent("attachments.json")
+                if let attachments = prompt.attachments, !attachments.isEmpty {
+                    let enc = JSONEncoder()
+                    enc.dateEncodingStrategy = .iso8601
+                    if let attachData = try? enc.encode(attachments) {
+                        try? attachData.write(to: attachmentsURL, options: .atomic)
+                    }
+                } else {
+                    try? fm.removeItem(at: attachmentsURL)
                 }
             }
         }

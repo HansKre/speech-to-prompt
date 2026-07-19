@@ -7,6 +7,7 @@ struct ProjectWorkspaceView: View {
     @ObservedObject var whisperManager: WhisperManager
     @ObservedObject var llmManager: LLMManager
     @ObservedObject var diagnosticsManager: DiagnosticsManager
+    @ObservedObject var attachmentManager: AttachmentManager
 
     @Binding var showSettings: Bool
     @Binding var showDiagnostics: Bool
@@ -31,6 +32,7 @@ struct ProjectWorkspaceView: View {
                         whisperManager: whisperManager,
                         llmManager: llmManager,
                         diagnosticsManager: diagnosticsManager,
+                        attachmentManager: attachmentManager,
                         showSettings: $showSettings,
                         showDiagnostics: $showDiagnostics
                     )

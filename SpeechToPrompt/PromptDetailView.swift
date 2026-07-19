@@ -8,6 +8,7 @@ struct PromptDetailView: View {
     @ObservedObject var whisperManager: WhisperManager
     @ObservedObject var llmManager: LLMManager
     @ObservedObject var diagnosticsManager: DiagnosticsManager
+    @ObservedObject var attachmentManager: AttachmentManager
 
     @Binding var showSettings: Bool
     @Binding var showDiagnostics: Bool
@@ -54,6 +55,7 @@ struct PromptDetailView: View {
             }
         }
         .onAppear {
+            attachmentManager.projectStore = projectStore
             loadCurrentPrompt()
             setupTranscriptionObserver()
         }
@@ -343,17 +345,27 @@ struct PromptDetailView: View {
                     .tooltip("Open in system editor")
                 }
 
-                TextEditor(text: $whisperManager.transcriptionResult)
-                    .font(.system(.body, design: .serif))
-                    .scrollContentBackground(.hidden)
-                    .padding(8)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(nsColor: .textBackgroundColor).opacity(0.15))
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                VStack(spacing: 0) {
+                    PastableTextView(
+                        text: $whisperManager.transcriptionResult,
+                        isSerif: true,
+                        onPasteAttachments: { ctx in handlePasteRaw(context: ctx) },
+                        onPasteTextFile: { item, cursor, decision in handleTextFilePaste(item: item, cursor: cursor, decision: decision) }
                     )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    AttachmentChipsView(
+                        attachments: attachmentManager.attachments,
+                        onDelete: { id in handleDeleteAttachment(id: id) },
+                        onTap: { attachment in openAttachment(attachment) }
+                    )
+                }
+                .background(Color(nsColor: .textBackgroundColor).opacity(0.15))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                )
             }
 
             VStack(alignment: .leading, spacing: 6) {
@@ -394,14 +406,25 @@ struct PromptDetailView: View {
                     .tooltip("Open in system editor")
                 }
 
-                TextEditor(text: Binding<String>(
-                    get: { llmManager.improvedPrompt ?? "" },
-                    set: { llmManager.improvedPrompt = $0 }
-                ))
-                .font(.system(.body, design: .monospaced))
-                .scrollContentBackground(.hidden)
-                .padding(8)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                VStack(spacing: 0) {
+                    PastableTextView(
+                        text: Binding<String>(
+                            get: { llmManager.improvedPrompt ?? "" },
+                            set: { llmManager.improvedPrompt = $0 }
+                        ),
+                        font: NSFont.monospacedSystemFont(ofSize: 14, weight: .regular),
+                        isSerif: false,
+                        onPasteAttachments: { ctx in handlePasteRefined(context: ctx) },
+                        onPasteTextFile: { item, cursor, decision in handleTextFilePaste(item: item, cursor: cursor, decision: decision) }
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    AttachmentChipsView(
+                        attachments: attachmentManager.attachments,
+                        onDelete: { id in handleDeleteAttachment(id: id) },
+                        onTap: { attachment in openAttachment(attachment) }
+                    )
+                }
                 .background(Color.purple.opacity(0.05))
                 .cornerRadius(12)
                 .overlay(
@@ -452,17 +475,27 @@ struct PromptDetailView: View {
                     .tooltip("Open in system editor")
                 }
 
-                TextEditor(text: $whisperManager.transcriptionResult)
-                    .font(.system(.body, design: .serif))
-                    .scrollContentBackground(.hidden)
-                    .padding(8)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(nsColor: .textBackgroundColor).opacity(0.15))
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                VStack(spacing: 0) {
+                    PastableTextView(
+                        text: $whisperManager.transcriptionResult,
+                        isSerif: true,
+                        onPasteAttachments: { ctx in handlePasteRaw(context: ctx) },
+                        onPasteTextFile: { item, cursor, decision in handleTextFilePaste(item: item, cursor: cursor, decision: decision) }
                     )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    AttachmentChipsView(
+                        attachments: attachmentManager.attachments,
+                        onDelete: { id in handleDeleteAttachment(id: id) },
+                        onTap: { attachment in openAttachment(attachment) }
+                    )
+                }
+                .background(Color(nsColor: .textBackgroundColor).opacity(0.15))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                )
             }
 
             VStack(spacing: 16) {
@@ -559,17 +592,27 @@ struct PromptDetailView: View {
                     .tooltip("Open in system editor")
                 }
 
-                TextEditor(text: $whisperManager.transcriptionResult)
-                    .font(.system(.body, design: .serif))
-                    .scrollContentBackground(.hidden)
-                    .padding(8)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(nsColor: .textBackgroundColor).opacity(0.15))
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                VStack(spacing: 0) {
+                    PastableTextView(
+                        text: $whisperManager.transcriptionResult,
+                        isSerif: true,
+                        onPasteAttachments: { ctx in handlePasteRaw(context: ctx) },
+                        onPasteTextFile: { item, cursor, decision in handleTextFilePaste(item: item, cursor: cursor, decision: decision) }
                     )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    AttachmentChipsView(
+                        attachments: attachmentManager.attachments,
+                        onDelete: { id in handleDeleteAttachment(id: id) },
+                        onTap: { attachment in openAttachment(attachment) }
+                    )
+                }
+                .background(Color(nsColor: .textBackgroundColor).opacity(0.15))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                )
             }
         }
     }
@@ -615,21 +658,32 @@ struct PromptDetailView: View {
                 }
             }
 
-            ZStack(alignment: .topLeading) {
-                TextEditor(text: $whisperManager.transcriptionResult)
-                    .font(.system(.body, design: .serif))
-                    .scrollContentBackground(.hidden)
-                    .padding(8)
+            VStack(spacing: 0) {
+                ZStack(alignment: .topLeading) {
+                    PastableTextView(
+                        text: $whisperManager.transcriptionResult,
+                        isSerif: true,
+                        onPasteAttachments: { ctx in handlePasteRaw(context: ctx) },
+                        onPasteTextFile: { item, cursor, decision in handleTextFilePaste(item: item, cursor: cursor, decision: decision) }
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                if whisperManager.transcriptionResult.isEmpty {
-                    Text("No transcription yet. Speak into your microphone and click stop, or type your prompt here...")
-                        .font(.system(.body, design: .serif))
-                        .foregroundColor(.secondary)
-                        .italic()
-                        .padding(.horizontal, 12)
-                        .padding(.top, 16)
-                        .allowsHitTesting(false)
+                    if whisperManager.transcriptionResult.isEmpty {
+                        Text("No transcription yet. Speak into your microphone and click stop, or type your prompt here...")
+                            .font(.system(.body, design: .serif))
+                            .foregroundColor(.secondary)
+                            .italic()
+                            .padding(.horizontal, 12)
+                            .padding(.top, 16)
+                            .allowsHitTesting(false)
+                    }
                 }
+
+                AttachmentChipsView(
+                    attachments: attachmentManager.attachments,
+                    onDelete: { id in handleDeleteAttachment(id: id) },
+                    onTap: { attachment in openAttachment(attachment) }
+                )
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(nsColor: .textBackgroundColor).opacity(0.15))
@@ -789,13 +843,15 @@ struct PromptDetailView: View {
     }
 
     private func loadCurrentPrompt() {
-        guard let prompt = projectStore.selectedPrompt else { return }
+        guard let prompt = projectStore.selectedPrompt,
+              let projectID = projectStore.selectedProjectID else { return }
         whisperManager.transcriptionResult = prompt.rawTranscription
         if let refined = prompt.refinedPrompt, !refined.isEmpty {
             llmManager.improvedPrompt = refined
         } else {
             llmManager.clearImprovedPrompt()
         }
+        attachmentManager.loadAttachments(for: prompt, projectID: projectID, promptID: prompt.id)
     }
 
     private func saveCurrentPrompt() {
@@ -827,6 +883,54 @@ struct PromptDetailView: View {
                     refinedText: llm.improvedPrompt
                 )
             }
+    }
+
+    private func handlePasteRaw(context: PasteContext) {
+        for item in context.items {
+            guard let attachment = attachmentManager.addAttachment(data: item.data, filename: item.filename, kind: item.kind) else { continue }
+            let ref = attachmentManager.referenceString(for: attachment)
+            let text = whisperManager.transcriptionResult
+            let insertAt = min(context.cursorPosition, text.count)
+            let idx = text.index(text.startIndex, offsetBy: insertAt)
+            whisperManager.transcriptionResult.insert(contentsOf: "\n\(ref)\n", at: idx)
+        }
+    }
+
+    private func handlePasteRefined(context: PasteContext) {
+        for item in context.items {
+            guard let attachment = attachmentManager.addAttachment(data: item.data, filename: item.filename, kind: item.kind) else { continue }
+            let ref = attachmentManager.referenceString(for: attachment)
+            var text = llmManager.improvedPrompt ?? ""
+            let insertAt = min(context.cursorPosition, text.count)
+            let idx = text.index(text.startIndex, offsetBy: insertAt)
+            text.insert(contentsOf: "\n\(ref)\n", at: idx)
+            llmManager.improvedPrompt = text
+        }
+    }
+
+    private func handleTextFilePaste(item: PastedItem, cursor: Int, decision: @escaping (Bool) -> Void) {
+        let alert = NSAlert()
+        alert.messageText = "Paste as attachment?"
+        alert.informativeText = "Do you want to attach \"\(item.filename)\" as a file, or paste its content as text?"
+        alert.addButton(withTitle: "Attach as File")
+        alert.addButton(withTitle: "Paste as Text")
+        alert.alertStyle = .informational
+
+        let response = alert.runModal()
+        decision(response == .alertFirstButtonReturn)
+    }
+
+    private func handleDeleteAttachment(id: UUID) {
+        var raw = whisperManager.transcriptionResult
+        var refined = llmManager.improvedPrompt
+        attachmentManager.removeAttachment(id: id, rawText: &raw, refinedText: &refined)
+        whisperManager.transcriptionResult = raw
+        llmManager.improvedPrompt = refined
+    }
+
+    private func openAttachment(_ attachment: Attachment) {
+        guard let url = attachmentManager.attachmentFileURL(for: attachment) else { return }
+        NSWorkspace.shared.open(url)
     }
 }
 

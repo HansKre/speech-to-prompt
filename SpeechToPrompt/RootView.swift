@@ -7,6 +7,7 @@ struct RootView: View {
     @StateObject private var whisperManager = WhisperManager()
     @StateObject private var llmManager = LLMManager()
     @StateObject private var diagnosticsManager = DiagnosticsManager.shared
+    @StateObject private var attachmentManager = AttachmentManager()
 
     @State private var showSettings = false
     @State private var showDiagnostics = false
@@ -21,6 +22,7 @@ struct RootView: View {
                     whisperManager: whisperManager,
                     llmManager: llmManager,
                     diagnosticsManager: diagnosticsManager,
+                    attachmentManager: attachmentManager,
                     showSettings: $showSettings,
                     showDiagnostics: $showDiagnostics
                 )
