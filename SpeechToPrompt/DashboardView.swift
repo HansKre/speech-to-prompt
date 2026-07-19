@@ -51,6 +51,7 @@ struct DashboardView: View {
                     .cornerRadius(10)
                 }
                 .buttonStyle(.plain)
+                .pointerOnHover()
                 .tooltip("Create a new project")
 
                 Button(action: { showSettings = true }) {
@@ -62,6 +63,7 @@ struct DashboardView: View {
                     .foregroundColor(.secondary)
                 }
                 .buttonStyle(.plain)
+                .pointerOnHover()
                 .tooltip("Open settings")
             }
 

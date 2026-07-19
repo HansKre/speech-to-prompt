@@ -11,31 +11,53 @@ struct ProjectWorkspaceView: View {
     @Binding var showSettings: Bool
     @Binding var showDiagnostics: Bool
 
+    private var showRecordingOverlay: Bool {
+        audioManager.isRecording || whisperManager.isTranscribing || whisperManager.isProcessingFinalAudio
+    }
+
     var body: some View {
-        NavigationSplitView(columnVisibility: .constant(.all)) {
-            SidebarView(
-                projectStore: projectStore,
-                isRecording: audioManager.isRecording
-            )
-        } detail: {
-            if projectStore.selectedPromptID != nil {
-                PromptDetailView(
+        ZStack {
+            NavigationSplitView(columnVisibility: .constant(.all)) {
+                SidebarView(
                     projectStore: projectStore,
-                    modelManager: modelManager,
+                    isRecording: showRecordingOverlay
+                )
+            } detail: {
+                if projectStore.selectedPromptID != nil {
+                    PromptDetailView(
+                        projectStore: projectStore,
+                        modelManager: modelManager,
+                        audioManager: audioManager,
+                        whisperManager: whisperManager,
+                        llmManager: llmManager,
+                        diagnosticsManager: diagnosticsManager,
+                        showSettings: $showSettings,
+                        showDiagnostics: $showDiagnostics
+                    )
+                } else {
+                    emptyPromptView
+                }
+            }
+            .navigationSplitViewStyle(.prominentDetail)
+            .toolbar(.hidden)
+            .blur(radius: showRecordingOverlay ? 6 : 0)
+            .allowsHitTesting(!showRecordingOverlay)
+            .disabled(showRecordingOverlay)
+
+            if showRecordingOverlay {
+                RecordingOverlayView(
                     audioManager: audioManager,
                     whisperManager: whisperManager,
-                    llmManager: llmManager,
-                    diagnosticsManager: diagnosticsManager,
-                    showSettings: $showSettings,
-                    showDiagnostics: $showDiagnostics
+                    onStop: {
+                        whisperManager.isProcessingFinalAudio = true
+                        _ = audioManager.stopRecording()
+                    }
                 )
-            } else {
-                emptyPromptView
+                .transition(.opacity)
             }
         }
-        .navigationSplitViewStyle(.prominentDetail)
-        .toolbar(.hidden)
-        .frame(minWidth: 900, minHeight: 500)
+        .animation(.easeInOut(duration: 0.25), value: showRecordingOverlay)
+        .frame(minWidth: 900, minHeight: 700)
     }
 
     private var emptyPromptView: some View {
@@ -43,10 +65,10 @@ struct ProjectWorkspaceView: View {
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 48))
                 .foregroundColor(.secondary.opacity(0.5))
-            Text("Select or create a prompt")
+            Text("Select or create prompt")
                 .font(.title3)
                 .foregroundColor(.secondary)
-            Text("Use the sidebar to add a prompt to your project")
+            Text("Use sidebar to add prompt to project")
                 .font(.callout)
                 .foregroundColor(.secondary.opacity(0.7))
         }

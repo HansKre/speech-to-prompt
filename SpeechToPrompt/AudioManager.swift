@@ -9,7 +9,7 @@ class AudioManager: NSObject, ObservableObject {
     
     private var audioEngine: AVAudioEngine?
     private var audioConverter: AVAudioConverter?
-    private var recordingURL: URL?
+    private(set) var recordingURL: URL?
     private var durationTimer: Timer?
     
     private let whisperFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16000, channels: 1, interleaved: false)!

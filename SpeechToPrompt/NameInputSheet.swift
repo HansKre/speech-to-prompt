@@ -33,6 +33,7 @@ struct NameInputSheet: View {
                 Button("Cancel") {
                     onCancel()
                 }
+                .pointerOnHover()
                 .keyboardShortcut(.cancelAction)
 
                 Spacer()
@@ -40,6 +41,7 @@ struct NameInputSheet: View {
                 Button("OK") {
                     submit()
                 }
+                .pointerOnHover()
                 .keyboardShortcut(.defaultAction)
                 .disabled(text.trimmingCharacters(in: .whitespaces).isEmpty)
             }

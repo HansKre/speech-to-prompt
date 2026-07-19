@@ -26,6 +26,22 @@ class ProjectStore: ObservableObject {
         return appDir.appendingPathComponent("projects.json")
     }
 
+    private var promptsBaseURL: URL {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let promptsDir = appSupport
+            .appendingPathComponent("SpeechToPrompt")
+            .appendingPathComponent("prompts")
+        try? FileManager.default.createDirectory(at: promptsDir, withIntermediateDirectories: true)
+        return promptsDir
+    }
+
+    func promptFileURL(projectID: UUID, promptID: UUID, type: PromptFileType) -> URL {
+        promptsBaseURL
+            .appendingPathComponent(projectID.uuidString)
+            .appendingPathComponent(promptID.uuidString)
+            .appendingPathComponent(type == .raw ? "raw.md" : "refined.md")
+    }
+
     init() {
         load()
         restoreLastActive()
@@ -54,6 +70,8 @@ class ProjectStore: ObservableObject {
             selectedProjectID = projects.first?.id
             selectedPromptID = selectedProject?.prompts.first?.id
         }
+        let projectDir = promptsBaseURL.appendingPathComponent(id.uuidString)
+        try? FileManager.default.removeItem(at: projectDir)
         save()
     }
 
@@ -74,12 +92,22 @@ class ProjectStore: ObservableObject {
         save()
     }
 
+    func movePrompt(projectID: UUID, from source: IndexSet, to destination: Int) {
+        guard let pIndex = projects.firstIndex(where: { $0.id == projectID }) else { return }
+        projects[pIndex].prompts.move(fromOffsets: source, toOffset: destination)
+        save()
+    }
+
     func deletePrompt(projectID: UUID, promptID: UUID) {
         guard let pIndex = projects.firstIndex(where: { $0.id == projectID }) else { return }
         projects[pIndex].prompts.removeAll { $0.id == promptID }
         if selectedPromptID == promptID {
             selectedPromptID = projects[pIndex].prompts.last?.id
         }
+        let promptDir = promptsBaseURL
+            .appendingPathComponent(projectID.uuidString)
+            .appendingPathComponent(promptID.uuidString)
+        try? FileManager.default.removeItem(at: promptDir)
         save()
     }
 
@@ -120,6 +148,47 @@ class ProjectStore: ObservableObject {
         guard let data = try? encoder.encode(projects) else { return }
         try? data.write(to: storageURL, options: .atomic)
         persistLastActive()
+        writePromptFiles()
+    }
+
+    private func writePromptFiles() {
+        let fm = FileManager.default
+        let iso = ISO8601DateFormatter()
+
+        for project in projects {
+            for prompt in project.prompts {
+                let promptDir = promptsBaseURL
+                    .appendingPathComponent(project.id.uuidString)
+                    .appendingPathComponent(prompt.id.uuidString)
+                try? fm.createDirectory(at: promptDir, withIntermediateDirectories: true)
+
+                try? prompt.rawTranscription.write(
+                    to: promptDir.appendingPathComponent("raw.md"),
+                    atomically: true, encoding: .utf8
+                )
+
+                let refinedURL = promptDir.appendingPathComponent("refined.md")
+                if let refined = prompt.refinedPrompt, !refined.isEmpty {
+                    try? refined.write(to: refinedURL, atomically: true, encoding: .utf8)
+                } else {
+                    try? fm.removeItem(at: refinedURL)
+                }
+
+                let meta: [String: String] = [
+                    "id": prompt.id.uuidString,
+                    "name": prompt.name,
+                    "project": project.name,
+                    "projectId": project.id.uuidString,
+                    "created": iso.string(from: prompt.createdAt),
+                    "updated": iso.string(from: prompt.updatedAt)
+                ]
+                if let metaData = try? JSONSerialization.data(
+                    withJSONObject: meta, options: [.prettyPrinted, .sortedKeys]
+                ) {
+                    try? metaData.write(to: promptDir.appendingPathComponent("meta.json"))
+                }
+            }
+        }
     }
 
     private func load() {

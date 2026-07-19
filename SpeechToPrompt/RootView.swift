@@ -107,6 +107,7 @@ struct RootView: View {
                     showSettings = false
                 }
                 .buttonStyle(.borderedProminent)
+                .pointerOnHover()
                 .tint(.purple)
             }
             .padding(.top, 10)
@@ -152,6 +153,7 @@ struct RootView: View {
                         diagnosticsManager.clearLogs()
                     }
                     .buttonStyle(.borderless)
+                    .pointerOnHover()
                     .tooltip("Clear all diagnostic logs")
                 }
 

@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct SidebarView: View {
     @ObservedObject var projectStore: ProjectStore
@@ -10,6 +11,11 @@ struct SidebarView: View {
     @State private var renamingProjectID: UUID?
     @State private var renamingPromptID: UUID?
     @State private var renameText = ""
+    @State private var deletingProjectID: UUID?
+    @State private var deletingPromptID: UUID?
+    @State private var deletingPromptProjectID: UUID?
+    @State private var showDeleteProjectAlert = false
+    @State private var showDeletePromptAlert = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,6 +31,9 @@ struct SidebarView: View {
                         ForEach(project.prompts) { prompt in
                             promptRow(prompt: prompt, projectID: project.id)
                                 .tag(prompt.id)
+                        }
+                        .onMove { source, destination in
+                            projectStore.movePrompt(projectID: project.id, from: source, to: destination)
                         }
                     } header: {
                         projectHeader(project: project)
@@ -45,13 +54,9 @@ struct SidebarView: View {
                 .scaleEffect(hoveredNewProject ? 1.02 : 1.0)
             }
             .buttonStyle(.plain)
+            .pointerOnHover()
             .padding(.vertical, 10)
             .onHover { isHovered in
-                if isHovered {
-                    NSCursor.pointingHand.push()
-                } else {
-                    NSCursor.pop()
-                }
                 withAnimation(.easeInOut(duration: 0.15)) {
                     hoveredNewProject = isHovered
                 }
@@ -108,6 +113,26 @@ struct SidebarView: View {
                 onCancel: { renamingPromptID = nil }
             )
         }
+        .alert("Delete Project", isPresented: $showDeleteProjectAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                if let id = deletingProjectID {
+                    projectStore.deleteProject(id: id)
+                }
+            }
+        } message: {
+            Text("This will permanently delete the project and all its prompts.")
+        }
+        .alert("Delete Prompt", isPresented: $showDeletePromptAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                if let promptID = deletingPromptID, let projectID = deletingPromptProjectID {
+                    projectStore.deletePrompt(projectID: projectID, promptID: promptID)
+                }
+            }
+        } message: {
+            Text("This will permanently delete this prompt.")
+        }
     }
 
     @State private var hoveredProjectID: UUID?
@@ -137,7 +162,8 @@ struct SidebarView: View {
                     renamingProjectID = project.id
                 }
                 sidebarActionButton(icon: "trash", color: .red.opacity(0.7), tooltip: "Delete Project") {
-                    projectStore.deleteProject(id: project.id)
+                    deletingProjectID = project.id
+                    showDeleteProjectAlert = true
                 }
             }
             .opacity(isHovered ? 1 : 0)
@@ -175,7 +201,8 @@ struct SidebarView: View {
                 renamingProjectID = project.id
             }
             Button("Delete", role: .destructive) {
-                projectStore.deleteProject(id: project.id)
+                deletingProjectID = project.id
+                showDeleteProjectAlert = true
             }
         }
     }
@@ -200,7 +227,9 @@ struct SidebarView: View {
                     renamingPromptID = prompt.id
                 }
                 sidebarActionButton(icon: "trash", color: .red.opacity(0.7), tooltip: "Delete Prompt") {
-                    projectStore.deletePrompt(projectID: projectID, promptID: prompt.id)
+                    deletingPromptID = prompt.id
+                    deletingPromptProjectID = projectID
+                    showDeletePromptAlert = true
                 }
             }
             .opacity(isHovered ? 1 : 0)
@@ -228,7 +257,9 @@ struct SidebarView: View {
                 renamingPromptID = prompt.id
             }
             Button("Delete", role: .destructive) {
-                projectStore.deletePrompt(projectID: projectID, promptID: prompt.id)
+                deletingPromptID = prompt.id
+                deletingPromptProjectID = projectID
+                showDeletePromptAlert = true
             }
         }
     }
@@ -258,6 +289,7 @@ private struct SidebarActionButtonView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .pointerOnHover()
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovered = hovering

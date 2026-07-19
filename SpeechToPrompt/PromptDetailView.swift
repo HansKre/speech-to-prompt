@@ -12,10 +12,16 @@ struct PromptDetailView: View {
     @Binding var showSettings: Bool
     @Binding var showDiagnostics: Bool
 
+    @AppStorage("pauseSpotifySetting") private var pauseSpotify = true
+    @AppStorage("autoRefineSetting") private var autoRefine = false
     @State private var copyFeedback = false
     @State private var copyRefinedFeedback = false
+    @State private var copyRawURLFeedback = false
+    @State private var copyRefinedURLFeedback = false
     @State private var transcriptionTask: Task<Void, Never>?
-    @State private var saveCancellable: AnyCancellable?
+    @State private var stoppingInternally = false
+    @State private var rawSaveCancellable: AnyCancellable?
+    @State private var refinedSaveCancellable: AnyCancellable?
 
     var body: some View {
         ZStack {
@@ -42,6 +48,11 @@ struct PromptDetailView: View {
         .onChange(of: projectStore.selectedPromptID) { oldID, _ in
             handlePromptSwitch(oldPromptID: oldID)
         }
+        .onChange(of: audioManager.isRecording) { wasRecording, isRecording in
+            if wasRecording && !isRecording && !stoppingInternally {
+                handleRecordingStopped()
+            }
+        }
         .onAppear {
             loadCurrentPrompt()
             setupTranscriptionObserver()
@@ -66,19 +77,58 @@ struct PromptDetailView: View {
                         )
                     )
 
-                if modelManager.isDownloaded {
-                    HStack(spacing: 6) {
-                        Circle().fill(Color.green).frame(width: 8, height: 8)
-                        Text("Whisper Large v3 Turbo (Metal)")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
+                if let prompt = projectStore.selectedPrompt {
+                    Text("Created \(prompt.createdAt.formatted(date: .abbreviated, time: .shortened)) · Updated \(prompt.updatedAt.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                 }
             }
             Spacer()
 
             if modelManager.isDownloaded {
-                HStack(spacing: 8) {
+                HStack(spacing: 12) {
+                    Button(action: toggleRecording) {
+                        HStack(spacing: 6) {
+                            Image(systemName: audioManager.isRecording ? "stop.fill" : "mic.fill")
+                                .font(.system(size: 14, weight: .bold))
+                            Text(audioManager.isRecording ? "Stop" : "Record")
+                                .font(.subheadline.bold())
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(
+                            LinearGradient(
+                                colors: audioManager.isRecording ? [.red, .orange] : [.purple, .indigo],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                    .pointerOnHover()
+                    .keyboardShortcut("r", modifiers: .command)
+                    .tooltip(audioManager.isRecording ? "Stop Recording (⌘R)" : "Start Recording (⌘R)")
+
+                    Button(action: { pauseSpotify.toggle() }) {
+                        Image(systemName: pauseSpotify ? "pause.circle.fill" : "pause.circle")
+                            .font(.system(size: 18))
+                            .foregroundColor(pauseSpotify ? .green : .secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .pointerOnHover()
+                    .tooltip(pauseSpotify ? "Spotify will pause during recording" : "Spotify will keep playing during recording")
+
+                    Button(action: { autoRefine.toggle() }) {
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: 18))
+                            .foregroundColor(autoRefine ? .purple : .secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .pointerOnHover()
+                    .tooltip(autoRefine ? "AI will refine after recording" : "AI refinement is manual")
+
                     ActionIconButton(icon: "gearshape.fill", tooltip: "Settings") {
                         showSettings = true
                     }
@@ -140,6 +190,7 @@ struct PromptDetailView: View {
                             .cornerRadius(8)
                     }
                     .buttonStyle(.plain)
+                    .pointerOnHover()
                 }
             } else {
                 VStack(spacing: 12) {
@@ -163,6 +214,7 @@ struct PromptDetailView: View {
                             .shadow(color: .purple.opacity(0.3), radius: 8, x: 0, y: 4)
                     }
                     .buttonStyle(.plain)
+                    .pointerOnHover()
                 }
             }
             Spacer()
@@ -172,103 +224,35 @@ struct PromptDetailView: View {
     // MARK: - Main Console
 
     private var mainConsoleView: some View {
-        VStack(spacing: 24) {
-            HStack(spacing: 40) {
-                VStack(spacing: 12) {
-                    Button(action: toggleRecording) {
-                        ZStack {
-                            Circle()
-                                .stroke(Color.purple.opacity(audioManager.isRecording ? 0.3 : 0.1), lineWidth: 2)
-                                .frame(width: 100, height: 100)
-                                .scaleEffect(audioManager.isRecording ? CGFloat(1.0 + audioManager.audioLevel * 0.4) : 1.0)
-                                .animation(.easeOut(duration: 0.1), value: audioManager.audioLevel)
-
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: audioManager.isRecording ? [.red, .orange] : [.purple, .indigo],
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                )
-                                .frame(width: 80, height: 80)
-                                .shadow(color: (audioManager.isRecording ? Color.red : Color.purple).opacity(0.4), radius: 10, x: 0, y: 6)
-
-                            Image(systemName: audioManager.isRecording ? "stop.fill" : "mic.fill")
-                                .font(.system(size: 32, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .keyboardShortcut("r", modifiers: .command)
-                    .tooltip(audioManager.isRecording ? "Stop Recording (⌘R)" : "Start Recording (⌘R)")
-
-                    Text(audioManager.isRecording ? formatDuration(audioManager.recordingDuration) : "Ready")
-                        .font(.system(.body, design: .monospaced))
-                        .fontWeight(.bold)
-                        .foregroundColor(audioManager.isRecording ? .red : .secondary)
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    if audioManager.isRecording {
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(Color.red)
-                                .frame(width: 8, height: 8)
-                                .opacity(audioManager.recordingDuration.truncatingRemainder(dividingBy: 2) == 0 ? 0.3 : 1.0)
-                                .animation(.easeInOut(duration: 0.5), value: audioManager.recordingDuration)
-                            Text("Recording...")
-                                .font(.body)
-                                .foregroundColor(.red)
-
-                            if whisperManager.isTranscribing {
-                                ProgressView()
-                                    .controlSize(.small)
-                                    .scaleEffect(0.8)
-                            }
-                        }
-                    } else if whisperManager.isTranscribing || whisperManager.isProcessingFinalAudio {
-                        HStack(spacing: 12) {
-                            ProgressView()
-                                .controlSize(.small)
-                            Text(whisperManager.statusMessage)
-                                .font(.body)
-                                .italic()
-                        }
-                    } else {
-                        Text("Click the microphone to start recording.")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                    }
-
-                    if !audioManager.permissionGranted {
-                        Text("⚠️ Microphone access denied. Check System Settings.")
-                            .font(.caption)
-                            .foregroundColor(.red)
-                    }
-                }
-                Spacer()
+        VStack(spacing: 16) {
+            if !audioManager.permissionGranted {
+                Text("Microphone access denied. Check System Settings.")
+                    .font(.caption)
+                    .foregroundColor(.red)
+                    .padding(.vertical, 4)
             }
-            .padding(.horizontal)
 
             transcriptionArea
         }
     }
+
 
     // MARK: - Transcription Area
 
     private var transcriptionArea: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(llmManager.improvedPrompt != nil ? "Transcription Panels" : "Transcription")
-                    .font(.headline)
-                Spacer()
-
                 if !whisperManager.transcriptionResult.isEmpty {
-                    if !audioManager.isRecording && !whisperManager.isTranscribing && !whisperManager.isProcessingFinalAudio {
+                    if !whisperManager.isTranscribing && !whisperManager.isProcessingFinalAudio {
                         Button(action: {
                             Task {
                                 await llmManager.improvePrompt(text: whisperManager.transcriptionResult)
+                                if llmManager.improvedPrompt != nil {
+                                    projectStore.updatePromptTranscription(
+                                        rawText: whisperManager.transcriptionResult,
+                                        refinedText: llmManager.improvedPrompt
+                                    )
+                                }
                             }
                         }) {
                             HStack(spacing: 4) {
@@ -277,16 +261,19 @@ struct PromptDetailView: View {
                                         .controlSize(.small)
                                         .scaleEffect(0.6)
                                 } else {
-                                    Image(systemName: "sparkles")
+                                    Image(systemName: "wand.and.stars")
                                 }
-                                Text(llmManager.state.isLoading ? "Improving..." : "Improve with AI")
+                                Text(llmManager.state.isLoading ? "Refining..." : "Refine with AI")
                             }
                         }
                         .buttonStyle(.borderedProminent)
+                        .pointerOnHover()
                         .tint(.purple)
                         .disabled(llmManager.state.isLoading)
                         .tooltip("Refine transcription with AI")
                     }
+
+                    Spacer()
 
                     Button(action: {
                         whisperManager.clearResult()
@@ -296,6 +283,7 @@ struct PromptDetailView: View {
                             .foregroundColor(.secondary)
                     }
                     .buttonStyle(.borderless)
+                    .pointerOnHover()
                     .tooltip("Clear transcription and AI result")
                 }
             }
@@ -309,13 +297,14 @@ struct PromptDetailView: View {
             } else {
                 singlePanelView
             }
+
         }
     }
 
     // MARK: - Panel Views
 
     private var dualPanelView: some View {
-        HStack(spacing: 16) {
+        VStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text("Raw Speech")
@@ -330,7 +319,28 @@ struct PromptDetailView: View {
                         .foregroundColor(copyFeedback ? .green : .primary)
                     }
                     .buttonStyle(.borderless)
+                    .pointerOnHover()
                     .tooltip("Copy raw transcription to clipboard")
+                    Button(action: copyRawURLToClipboard) {
+                        HStack(spacing: 4) {
+                            Image(systemName: copyRawURLFeedback ? "checkmark.circle.fill" : "link")
+                            Text(copyRawURLFeedback ? "Copied!" : "Copy URL")
+                        }
+                        .foregroundColor(copyRawURLFeedback ? .green : .primary)
+                    }
+                    .buttonStyle(.borderless)
+                    .pointerOnHover()
+                    .tooltip("Copy file path to clipboard")
+                    Button(action: openRawFile) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.up.forward.square")
+                            Text("Open")
+                        }
+                        .foregroundColor(.primary)
+                    }
+                    .buttonStyle(.borderless)
+                    .pointerOnHover()
+                    .tooltip("Open in system editor")
                 }
 
                 TextEditor(text: $whisperManager.transcriptionResult)
@@ -355,12 +365,33 @@ struct PromptDetailView: View {
                     Button(action: copyRefinedToClipboard) {
                         HStack(spacing: 4) {
                             Image(systemName: copyRefinedFeedback ? "checkmark.circle.fill" : "doc.on.doc")
-                            Text(copyRefinedFeedback ? "Copied!" : "Copy Improved")
+                            Text(copyRefinedFeedback ? "Copied!" : "Copy Refined")
                         }
                         .foregroundColor(copyRefinedFeedback ? .green : .purple)
                     }
                     .buttonStyle(.borderless)
-                    .tooltip("Copy AI-improved text to clipboard")
+                    .pointerOnHover()
+                    .tooltip("Copy refined text to clipboard")
+                    Button(action: copyRefinedURLToClipboard) {
+                        HStack(spacing: 4) {
+                            Image(systemName: copyRefinedURLFeedback ? "checkmark.circle.fill" : "link")
+                            Text(copyRefinedURLFeedback ? "Copied!" : "Copy URL")
+                        }
+                        .foregroundColor(copyRefinedURLFeedback ? .green : .purple)
+                    }
+                    .buttonStyle(.borderless)
+                    .pointerOnHover()
+                    .tooltip("Copy file path to clipboard")
+                    Button(action: openRefinedFile) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.up.forward.square")
+                            Text("Open")
+                        }
+                        .foregroundColor(.purple)
+                    }
+                    .buttonStyle(.borderless)
+                    .pointerOnHover()
+                    .tooltip("Open in system editor")
                 }
 
                 TextEditor(text: Binding<String>(
@@ -382,7 +413,7 @@ struct PromptDetailView: View {
     }
 
     private var loadingPanelView: some View {
-        HStack(spacing: 16) {
+        VStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text("Raw Speech")
@@ -397,7 +428,28 @@ struct PromptDetailView: View {
                         .foregroundColor(copyFeedback ? .green : .primary)
                     }
                     .buttonStyle(.borderless)
+                    .pointerOnHover()
                     .tooltip("Copy raw transcription to clipboard")
+                    Button(action: copyRawURLToClipboard) {
+                        HStack(spacing: 4) {
+                            Image(systemName: copyRawURLFeedback ? "checkmark.circle.fill" : "link")
+                            Text(copyRawURLFeedback ? "Copied!" : "Copy URL")
+                        }
+                        .foregroundColor(copyRawURLFeedback ? .green : .primary)
+                    }
+                    .buttonStyle(.borderless)
+                    .pointerOnHover()
+                    .tooltip("Copy file path to clipboard")
+                    Button(action: openRawFile) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.up.forward.square")
+                            Text("Open")
+                        }
+                        .foregroundColor(.primary)
+                    }
+                    .buttonStyle(.borderless)
+                    .pointerOnHover()
+                    .tooltip("Open in system editor")
                 }
 
                 TextEditor(text: $whisperManager.transcriptionResult)
@@ -445,6 +497,7 @@ struct PromptDetailView: View {
                     llmManager.clearImprovedPrompt()
                 }
                 .buttonStyle(.borderless)
+                .pointerOnHover()
                 .tooltip("Dismiss error")
             }
 
@@ -482,7 +535,28 @@ struct PromptDetailView: View {
                         .foregroundColor(copyFeedback ? .green : .primary)
                     }
                     .buttonStyle(.borderless)
+                    .pointerOnHover()
                     .tooltip("Copy raw transcription to clipboard")
+                    Button(action: copyRawURLToClipboard) {
+                        HStack(spacing: 4) {
+                            Image(systemName: copyRawURLFeedback ? "checkmark.circle.fill" : "link")
+                            Text(copyRawURLFeedback ? "Copied!" : "Copy URL")
+                        }
+                        .foregroundColor(copyRawURLFeedback ? .green : .primary)
+                    }
+                    .buttonStyle(.borderless)
+                    .pointerOnHover()
+                    .tooltip("Copy file path to clipboard")
+                    Button(action: openRawFile) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.up.forward.square")
+                            Text("Open")
+                        }
+                        .foregroundColor(.primary)
+                    }
+                    .buttonStyle(.borderless)
+                    .pointerOnHover()
+                    .tooltip("Open in system editor")
                 }
 
                 TextEditor(text: $whisperManager.transcriptionResult)
@@ -516,7 +590,28 @@ struct PromptDetailView: View {
                         .foregroundColor(copyFeedback ? .green : .primary)
                     }
                     .buttonStyle(.borderless)
+                    .pointerOnHover()
                     .tooltip("Copy raw transcription to clipboard")
+                    Button(action: copyRawURLToClipboard) {
+                        HStack(spacing: 4) {
+                            Image(systemName: copyRawURLFeedback ? "checkmark.circle.fill" : "link")
+                            Text(copyRawURLFeedback ? "Copied!" : "Copy URL")
+                        }
+                        .foregroundColor(copyRawURLFeedback ? .green : .primary)
+                    }
+                    .buttonStyle(.borderless)
+                    .pointerOnHover()
+                    .tooltip("Copy file path to clipboard")
+                    Button(action: openRawFile) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.up.forward.square")
+                            Text("Open")
+                        }
+                        .foregroundColor(.primary)
+                    }
+                    .buttonStyle(.borderless)
+                    .pointerOnHover()
+                    .tooltip("Open in system editor")
                 }
             }
 
@@ -550,6 +645,7 @@ struct PromptDetailView: View {
 
     private func toggleRecording() {
         if audioManager.isRecording {
+            stoppingInternally = true
             transcriptionTask?.cancel()
             transcriptionTask = nil
 
@@ -559,15 +655,40 @@ struct PromptDetailView: View {
             guard let url = audioManager.stopRecording() else {
                 whisperManager.isProcessingFinalAudio = false
                 whisperManager.statusMessage = ""
+                stoppingInternally = false
                 return
             }
             Task {
                 await whisperManager.transcribeAudio(fileURL: url, modelURL: modelManager.localModelURL)
+                stoppingInternally = false
+                if autoRefine && !whisperManager.transcriptionResult.isEmpty {
+                    await llmManager.improvePrompt(text: whisperManager.transcriptionResult)
+                }
             }
         } else {
             whisperManager.startNewSession()
             audioManager.startRecording()
             startLiveTranscriptionLoop()
+        }
+    }
+
+    private func handleRecordingStopped() {
+        transcriptionTask?.cancel()
+        transcriptionTask = nil
+
+        whisperManager.isProcessingFinalAudio = true
+        whisperManager.statusMessage = "Preparing transcription..."
+
+        guard let url = audioManager.recordingURL else {
+            whisperManager.isProcessingFinalAudio = false
+            whisperManager.statusMessage = ""
+            return
+        }
+        Task {
+            await whisperManager.transcribeAudio(fileURL: url, modelURL: modelManager.localModelURL)
+            if autoRefine && !whisperManager.transcriptionResult.isEmpty {
+                await llmManager.improvePrompt(text: whisperManager.transcriptionResult)
+            }
         }
     }
 
@@ -590,11 +711,6 @@ struct PromptDetailView: View {
         }
     }
 
-    private func formatDuration(_ duration: TimeInterval) -> String {
-        let minutes = Int(duration) / 60
-        let seconds = Int(duration) % 60
-        return String(format: "%02d:%02d", minutes, seconds)
-    }
 
     private func copyToClipboard() {
         let pasteboard = NSPasteboard.general
@@ -617,6 +733,48 @@ struct PromptDetailView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             withAnimation { copyRefinedFeedback = false }
         }
+    }
+
+    private func copyRawURLToClipboard() {
+        guard let projectID = projectStore.selectedProjectID,
+              let promptID = projectStore.selectedPromptID else { return }
+        let url = projectStore.promptFileURL(projectID: projectID, promptID: promptID, type: .raw)
+        let pasteboard = NSPasteboard.general
+        pasteboard.declareTypes([.string], owner: nil)
+        pasteboard.setString(url.path, forType: .string)
+
+        withAnimation { copyRawURLFeedback = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation { copyRawURLFeedback = false }
+        }
+    }
+
+    private func copyRefinedURLToClipboard() {
+        guard let projectID = projectStore.selectedProjectID,
+              let promptID = projectStore.selectedPromptID else { return }
+        let url = projectStore.promptFileURL(projectID: projectID, promptID: promptID, type: .refined)
+        let pasteboard = NSPasteboard.general
+        pasteboard.declareTypes([.string], owner: nil)
+        pasteboard.setString(url.path, forType: .string)
+
+        withAnimation { copyRefinedURLFeedback = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation { copyRefinedURLFeedback = false }
+        }
+    }
+
+    private func openRawFile() {
+        guard let projectID = projectStore.selectedProjectID,
+              let promptID = projectStore.selectedPromptID else { return }
+        let url = projectStore.promptFileURL(projectID: projectID, promptID: promptID, type: .raw)
+        NSWorkspace.shared.open(url)
+    }
+
+    private func openRefinedFile() {
+        guard let projectID = projectStore.selectedProjectID,
+              let promptID = projectStore.selectedPromptID else { return }
+        let url = projectStore.promptFileURL(projectID: projectID, promptID: promptID, type: .refined)
+        NSWorkspace.shared.open(url)
     }
 
     // MARK: - Prompt Data Sync
@@ -651,7 +809,17 @@ struct PromptDetailView: View {
         let store = projectStore
         let whisper = whisperManager
         let llm = llmManager
-        saveCancellable = whisper.$transcriptionResult
+
+        rawSaveCancellable = whisper.$transcriptionResult
+            .debounce(for: .seconds(1), scheduler: RunLoop.main)
+            .sink { _ in
+                store.updatePromptTranscription(
+                    rawText: whisper.transcriptionResult,
+                    refinedText: llm.improvedPrompt
+                )
+            }
+
+        refinedSaveCancellable = llm.$improvedPrompt
             .debounce(for: .seconds(1), scheduler: RunLoop.main)
             .sink { _ in
                 store.updatePromptTranscription(
@@ -680,6 +848,7 @@ private struct ActionIconButton: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)
+        .pointerOnHover()
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovered = hovering

@@ -1,5 +1,10 @@
 import Foundation
 
+enum PromptFileType {
+    case raw
+    case refined
+}
+
 struct Prompt: Identifiable, Codable, Equatable {
     let id: UUID
     var name: String
