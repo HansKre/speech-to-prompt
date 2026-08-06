@@ -117,6 +117,14 @@ class ProjectStore: ObservableObject {
         save()
     }
 
+    func togglePromptDone(projectID: UUID, promptID: UUID) {
+        guard let pIndex = projects.firstIndex(where: { $0.id == projectID }),
+              let qIndex = projects[pIndex].prompts.firstIndex(where: { $0.id == promptID }) else { return }
+        projects[pIndex].prompts[qIndex].isDone.toggle()
+        projects[pIndex].prompts[qIndex].updatedAt = Date()
+        save()
+    }
+
     func deletePrompt(projectID: UUID, promptID: UUID) {
         guard let pIndex = projects.firstIndex(where: { $0.id == projectID }) else { return }
         projects[pIndex].prompts.removeAll { $0.id == promptID }
@@ -196,11 +204,12 @@ class ProjectStore: ObservableObject {
                     try? fm.removeItem(at: refinedURL)
                 }
 
-                let meta: [String: String] = [
+                let meta: [String: Any] = [
                     "id": prompt.id.uuidString,
                     "name": prompt.name,
                     "project": project.name,
                     "projectId": project.id.uuidString,
+                    "isDone": prompt.isDone,
                     "created": iso.string(from: prompt.createdAt),
                     "updated": iso.string(from: prompt.updatedAt)
                 ]

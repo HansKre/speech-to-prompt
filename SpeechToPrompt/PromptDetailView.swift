@@ -36,6 +36,11 @@ struct PromptDetailView: View {
 
             VStack(spacing: 24) {
                 header
+
+                if modelManager.isDownloaded {
+                    controlsRow
+                }
+
                 Divider().opacity(0.2)
 
                 if !modelManager.isDownloaded {
@@ -89,48 +94,6 @@ struct PromptDetailView: View {
 
             if modelManager.isDownloaded {
                 HStack(spacing: 12) {
-                    Button(action: toggleRecording) {
-                        HStack(spacing: 6) {
-                            Image(systemName: audioManager.isRecording ? "stop.fill" : "mic.fill")
-                                .font(.system(size: 14, weight: .bold))
-                            Text(audioManager.isRecording ? "Stop" : "Record")
-                                .font(.subheadline.bold())
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(
-                            LinearGradient(
-                                colors: audioManager.isRecording ? [.red, .orange] : [.purple, .indigo],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .cornerRadius(8)
-                    }
-                    .buttonStyle(.plain)
-                    .pointerOnHover()
-                    .keyboardShortcut("r", modifiers: .command)
-                    .tooltip(audioManager.isRecording ? "Stop Recording (⌘R)" : "Start Recording (⌘R)")
-
-                    Button(action: { pauseSpotify.toggle() }) {
-                        Image(systemName: pauseSpotify ? "pause.circle.fill" : "pause.circle")
-                            .font(.system(size: 18))
-                            .foregroundColor(pauseSpotify ? .green : .secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .pointerOnHover()
-                    .tooltip(pauseSpotify ? "Spotify will pause during recording" : "Spotify will keep playing during recording")
-
-                    Button(action: { autoRefine.toggle() }) {
-                        Image(systemName: "wand.and.stars")
-                            .font(.system(size: 18))
-                            .foregroundColor(autoRefine ? .purple : .secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .pointerOnHover()
-                    .tooltip(autoRefine ? "AI will refine after recording" : "AI refinement is manual")
-
                     ActionIconButton(icon: "gearshape.fill", tooltip: "Settings") {
                         showSettings = true
                     }
@@ -139,6 +102,59 @@ struct PromptDetailView: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - Controls Row
+
+    private var controlsRow: some View {
+        HStack(spacing: 12) {
+            Button(action: toggleRecording) {
+                HStack(spacing: 4) {
+                    Image(systemName: audioManager.isRecording ? "stop.fill" : "mic.fill")
+                    Text(audioManager.isRecording ? "Stop" : "Record")
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(audioManager.isRecording ? .red : .purple)
+            .pointerOnHover()
+            .keyboardShortcut("r", modifiers: .command)
+            .tooltip(audioManager.isRecording ? "Stop Recording (⌘R)" : "Start Recording (⌘R)")
+
+            Button(action: {
+                guard let projectID = projectStore.selectedProjectID,
+                      let promptID = projectStore.selectedPromptID else { return }
+                projectStore.togglePromptDone(projectID: projectID, promptID: promptID)
+            }) {
+                HStack(spacing: 4) {
+                    Image(systemName: projectStore.selectedPrompt?.isDone == true ? "checkmark.square.fill" : "square")
+                    Text("Done")
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(projectStore.selectedPrompt?.isDone == true ? .green : .gray)
+            .pointerOnHover()
+            .tooltip(projectStore.selectedPrompt?.isDone == true ? "Mark as To Do" : "Mark as Done")
+
+            Button(action: { pauseSpotify.toggle() }) {
+                Image(systemName: pauseSpotify ? "pause.circle.fill" : "pause.circle")
+                    .font(.system(size: 18))
+                    .foregroundColor(pauseSpotify ? .green : .secondary)
+            }
+            .buttonStyle(.plain)
+            .pointerOnHover()
+            .tooltip(pauseSpotify ? "Spotify will pause during recording" : "Spotify will keep playing during recording")
+
+            Button(action: { autoRefine.toggle() }) {
+                Image(systemName: "wand.and.stars")
+                    .font(.system(size: 18))
+                    .foregroundColor(autoRefine ? .purple : .secondary)
+            }
+            .buttonStyle(.plain)
+            .pointerOnHover()
+            .tooltip(autoRefine ? "AI will refine after recording" : "AI refinement is manual")
+
+            Spacer()
         }
     }
 

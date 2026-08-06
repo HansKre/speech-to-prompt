@@ -236,12 +236,21 @@ struct SidebarView: View {
         let isSelected = projectStore.selectedPromptID == prompt.id
 
         return HStack(spacing: 6) {
-            Image(systemName: "doc.text")
-                .font(.callout)
-                .foregroundColor(.secondary)
+            Button(action: {
+                projectStore.togglePromptDone(projectID: projectID, promptID: prompt.id)
+            }) {
+                Image(systemName: prompt.isDone ? "checkmark.square.fill" : "square")
+                    .font(.callout)
+                    .foregroundColor(prompt.isDone ? .green : .secondary)
+            }
+            .buttonStyle(.plain)
+            .pointerOnHover()
+
             Text(prompt.name)
                 .font(.callout)
                 .lineLimit(1)
+                .strikethrough(prompt.isDone)
+                .foregroundColor(prompt.isDone ? .secondary : .primary)
 
             Spacer()
 
@@ -275,7 +284,13 @@ struct SidebarView: View {
                 hoveredPromptID = hovered ? prompt.id : nil
             }
         }
+
+        .opacity(prompt.isDone ? 0.5 : 1.0)
         .contextMenu {
+            Button(prompt.isDone ? "Mark as To Do" : "Mark as Done") {
+                projectStore.togglePromptDone(projectID: projectID, promptID: prompt.id)
+            }
+            Divider()
             Button("Rename") {
                 renameText = prompt.name
                 renamingPromptID = prompt.id
