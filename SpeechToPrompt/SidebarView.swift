@@ -44,6 +44,29 @@ struct SidebarView: View {
 
             Divider()
 
+            if !projectStore.projects.isEmpty && projectStore.selectedPromptID != nil {
+                Button(action: {
+                    newPromptProjectID = projectStore.selectedProjectID
+                    showNewPrompt = true
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "doc.badge.plus")
+                        Text("Add Prompt")
+                    }
+                    .font(.callout)
+                    .foregroundColor(hoveredAddPrompt ? .purple : .purple.opacity(0.7))
+                    .scaleEffect(hoveredAddPrompt ? 1.02 : 1.0)
+                }
+                .buttonStyle(.plain)
+                .pointerOnHover()
+                .onHover { isHovered in
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        hoveredAddPrompt = isHovered
+                    }
+                }
+                .padding(.top, 10)
+            }
+
             Button(action: { showNewProject = true }) {
                 HStack(spacing: 6) {
                     Image(systemName: "plus.circle.fill")
