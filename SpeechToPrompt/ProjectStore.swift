@@ -139,6 +139,9 @@ class ProjectStore: ObservableObject {
     }
 
     func selectPrompt(_ id: UUID) {
+        if let project = projects.first(where: { $0.prompts.contains(where: { $0.id == id }) }) {
+            selectedProjectID = project.id
+        }
         selectedPromptID = id
         persistLastActive()
     }
