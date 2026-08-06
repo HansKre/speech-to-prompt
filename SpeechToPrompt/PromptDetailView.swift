@@ -290,10 +290,8 @@ struct PromptDetailView: View {
                 }
             }
 
-            if llmManager.improvedPrompt != nil {
+            if llmManager.improvedPrompt != nil || llmManager.state.isLoading {
                 dualPanelView
-            } else if case .loading = llmManager.state {
-                loadingPanelView
             } else if case .failure(let errorMsg) = llmManager.state {
                 errorPanelView(errorMsg: errorMsg)
             } else {
@@ -343,12 +341,21 @@ struct PromptDetailView: View {
                     .buttonStyle(.borderless)
                     .pointerOnHover()
                     .tooltip("Open in system editor")
+                    Button(action: showRawFileInFinder) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "folder")
+                            Text("Finder")
+                        }
+                        .foregroundColor(.primary)
+                    }
+                    .buttonStyle(.borderless)
+                    .pointerOnHover()
+                    .tooltip("Reveal in Finder")
                 }
 
                 VStack(spacing: 0) {
                     PastableTextView(
                         text: $whisperManager.transcriptionResult,
-                        isSerif: true,
                         onPasteAttachments: { ctx in handlePasteRaw(context: ctx) },
                         onPasteTextFile: { item, cursor, decision in handleTextFilePaste(item: item, cursor: cursor, decision: decision) }
                     )
@@ -404,6 +411,16 @@ struct PromptDetailView: View {
                     .buttonStyle(.borderless)
                     .pointerOnHover()
                     .tooltip("Open in system editor")
+                    Button(action: showRefinedFileInFinder) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "folder")
+                            Text("Finder")
+                        }
+                        .foregroundColor(.purple)
+                    }
+                    .buttonStyle(.borderless)
+                    .pointerOnHover()
+                    .tooltip("Reveal in Finder")
                 }
 
                 VStack(spacing: 0) {
@@ -412,8 +429,7 @@ struct PromptDetailView: View {
                             get: { llmManager.improvedPrompt ?? "" },
                             set: { llmManager.improvedPrompt = $0 }
                         ),
-                        font: NSFont.monospacedSystemFont(ofSize: 14, weight: .regular),
-                        isSerif: false,
+                        isEditable: !llmManager.state.isLoading,
                         onPasteAttachments: { ctx in handlePasteRefined(context: ctx) },
                         onPasteTextFile: { item, cursor, decision in handleTextFilePaste(item: item, cursor: cursor, decision: decision) }
                     )
@@ -431,91 +447,25 @@ struct PromptDetailView: View {
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(Color.purple.opacity(0.2), lineWidth: 1)
                 )
+                .overlay {
+                    if llmManager.state.isLoading {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.purple.opacity(0.03))
+                            VStack(spacing: 8) {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                Text("Refining...")
+                                    .font(.caption)
+                                    .foregroundColor(.purple)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 
-    private var loadingPanelView: some View {
-        VStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text("Raw Speech")
-                        .font(.caption.bold())
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Button(action: copyToClipboard) {
-                        HStack(spacing: 4) {
-                            Image(systemName: copyFeedback ? "checkmark.circle.fill" : "doc.on.doc")
-                            Text(copyFeedback ? "Copied!" : "Copy Raw")
-                        }
-                        .foregroundColor(copyFeedback ? .green : .primary)
-                    }
-                    .buttonStyle(.borderless)
-                    .pointerOnHover()
-                    .tooltip("Copy raw transcription to clipboard")
-                    Button(action: copyRawURLToClipboard) {
-                        HStack(spacing: 4) {
-                            Image(systemName: copyRawURLFeedback ? "checkmark.circle.fill" : "link")
-                            Text(copyRawURLFeedback ? "Copied!" : "Copy URL")
-                        }
-                        .foregroundColor(copyRawURLFeedback ? .green : .primary)
-                    }
-                    .buttonStyle(.borderless)
-                    .pointerOnHover()
-                    .tooltip("Copy file path to clipboard")
-                    Button(action: openRawFile) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "arrow.up.forward.square")
-                            Text("Open")
-                        }
-                        .foregroundColor(.primary)
-                    }
-                    .buttonStyle(.borderless)
-                    .pointerOnHover()
-                    .tooltip("Open in system editor")
-                }
-
-                VStack(spacing: 0) {
-                    PastableTextView(
-                        text: $whisperManager.transcriptionResult,
-                        isSerif: true,
-                        onPasteAttachments: { ctx in handlePasteRaw(context: ctx) },
-                        onPasteTextFile: { item, cursor, decision in handleTextFilePaste(item: item, cursor: cursor, decision: decision) }
-                    )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                    AttachmentChipsView(
-                        attachments: attachmentManager.attachments,
-                        onDelete: { id in handleDeleteAttachment(id: id) },
-                        onTap: { attachment in openAttachment(attachment) }
-                    )
-                }
-                .background(Color(nsColor: .textBackgroundColor).opacity(0.15))
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-                )
-            }
-
-            VStack(spacing: 16) {
-                Spacer()
-                ProgressView()
-                    .controlSize(.large)
-                Text("Refining prompt with Azure OpenAI...")
-                    .font(.body.italic())
-                    .foregroundColor(.secondary)
-                Spacer()
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.purple.opacity(0.05))
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.purple.opacity(0.15), lineWidth: 1)
-            )
-        }
-    }
 
     private func errorPanelView(errorMsg: String) -> some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -590,12 +540,21 @@ struct PromptDetailView: View {
                     .buttonStyle(.borderless)
                     .pointerOnHover()
                     .tooltip("Open in system editor")
+                    Button(action: showRawFileInFinder) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "folder")
+                            Text("Finder")
+                        }
+                        .foregroundColor(.primary)
+                    }
+                    .buttonStyle(.borderless)
+                    .pointerOnHover()
+                    .tooltip("Reveal in Finder")
                 }
 
                 VStack(spacing: 0) {
                     PastableTextView(
                         text: $whisperManager.transcriptionResult,
-                        isSerif: true,
                         onPasteAttachments: { ctx in handlePasteRaw(context: ctx) },
                         onPasteTextFile: { item, cursor, decision in handleTextFilePaste(item: item, cursor: cursor, decision: decision) }
                     )
@@ -655,6 +614,16 @@ struct PromptDetailView: View {
                     .buttonStyle(.borderless)
                     .pointerOnHover()
                     .tooltip("Open in system editor")
+                    Button(action: showRawFileInFinder) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "folder")
+                            Text("Finder")
+                        }
+                        .foregroundColor(.primary)
+                    }
+                    .buttonStyle(.borderless)
+                    .pointerOnHover()
+                    .tooltip("Reveal in Finder")
                 }
             }
 
@@ -662,7 +631,6 @@ struct PromptDetailView: View {
                 ZStack(alignment: .topLeading) {
                     PastableTextView(
                         text: $whisperManager.transcriptionResult,
-                        isSerif: true,
                         onPasteAttachments: { ctx in handlePasteRaw(context: ctx) },
                         onPasteTextFile: { item, cursor, decision in handleTextFilePaste(item: item, cursor: cursor, decision: decision) }
                     )
@@ -670,7 +638,7 @@ struct PromptDetailView: View {
 
                     if whisperManager.transcriptionResult.isEmpty {
                         Text("No transcription yet. Speak into your microphone and click stop, or type your prompt here...")
-                            .font(.system(.body, design: .serif))
+                            .font(.system(.body, design: .monospaced))
                             .foregroundColor(.secondary)
                             .italic()
                             .padding(.horizontal, 12)
@@ -829,6 +797,20 @@ struct PromptDetailView: View {
               let promptID = projectStore.selectedPromptID else { return }
         let url = projectStore.promptFileURL(projectID: projectID, promptID: promptID, type: .refined)
         NSWorkspace.shared.open(url)
+    }
+
+    private func showRawFileInFinder() {
+        guard let projectID = projectStore.selectedProjectID,
+              let promptID = projectStore.selectedPromptID else { return }
+        let url = projectStore.promptFileURL(projectID: projectID, promptID: promptID, type: .raw)
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+
+    private func showRefinedFileInFinder() {
+        guard let projectID = projectStore.selectedProjectID,
+              let promptID = projectStore.selectedPromptID else { return }
+        let url = projectStore.promptFileURL(projectID: projectID, promptID: promptID, type: .refined)
+        NSWorkspace.shared.activateFileViewerSelecting([url])
     }
 
     // MARK: - Prompt Data Sync

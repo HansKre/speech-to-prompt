@@ -14,8 +14,7 @@ struct PasteContext {
 
 struct PastableTextView: NSViewRepresentable {
     @Binding var text: String
-    var font: NSFont = .systemFont(ofSize: 14)
-    var isSerif: Bool = true
+    var isEditable: Bool = true
     var onPasteAttachments: ((PasteContext) -> Void)?
     var onPasteTextFile: ((PastedItem, Int, @escaping (Bool) -> Void) -> Void)?
 
@@ -29,6 +28,9 @@ struct PastableTextView: NSViewRepresentable {
     static let imageExtensions: Set<String> = [
         "png", "jpg", "jpeg", "gif", "webp", "svg", "tiff", "bmp", "heic"
     ]
+
+    private static let monoFont = NSFont.monospacedSystemFont(ofSize: 14, weight: .regular)
+    private static let referencePattern = try! NSRegularExpression(pattern: #"!\[[^\]]*\]\(attachments/[^)]+\)"#)
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -45,7 +47,7 @@ struct PastableTextView: NSViewRepresentable {
         let textView = PasteInterceptingTextView()
         textView.isRichText = false
         textView.allowsUndo = true
-        textView.isEditable = true
+        textView.isEditable = isEditable
         textView.isSelectable = true
         textView.drawsBackground = false
         textView.textContainerInset = NSSize(width: 4, height: 4)
@@ -53,11 +55,7 @@ struct PastableTextView: NSViewRepresentable {
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
 
-        if isSerif {
-            textView.font = NSFont(name: "Georgia", size: 14) ?? NSFont.systemFont(ofSize: 14)
-        } else {
-            textView.font = font
-        }
+        textView.font = Self.monoFont
 
         textView.delegate = context.coordinator
         textView.coordinator = context.coordinator
@@ -72,6 +70,7 @@ struct PastableTextView: NSViewRepresentable {
         context.coordinator.textView = textView
 
         textView.string = text
+        Self.applyReferenceHighlighting(to: textView)
 
         return scrollView
     }
@@ -79,6 +78,7 @@ struct PastableTextView: NSViewRepresentable {
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         guard let textView = nsView.documentView as? PasteInterceptingTextView else { return }
         context.coordinator.parent = self
+        textView.isEditable = isEditable
         if context.coordinator.isUpdating { return }
         if textView.string != text {
             context.coordinator.isUpdating = true
@@ -89,7 +89,19 @@ struct PastableTextView: NSViewRepresentable {
                 length: 0
             )
             textView.setSelectedRange(clampedRange)
+            Self.applyReferenceHighlighting(to: textView)
             context.coordinator.isUpdating = false
+        }
+    }
+
+    static func applyReferenceHighlighting(to textView: NSTextView) {
+        guard let textStorage = textView.textStorage else { return }
+        let fullRange = NSRange(location: 0, length: textStorage.length)
+        textStorage.addAttribute(.font, value: monoFont, range: fullRange)
+        textStorage.addAttribute(.foregroundColor, value: NSColor.labelColor, range: fullRange)
+        let matches = referencePattern.matches(in: textStorage.string, range: fullRange)
+        for match in matches {
+            textStorage.addAttribute(.foregroundColor, value: NSColor.systemBlue, range: match.range)
         }
     }
 
@@ -107,6 +119,7 @@ struct PastableTextView: NSViewRepresentable {
             if isUpdating { return }
             isUpdating = true
             parent.text = textView.string
+            PastableTextView.applyReferenceHighlighting(to: textView)
             isUpdating = false
         }
 

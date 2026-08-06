@@ -44,6 +44,7 @@ struct AttachmentChip: View {
     let onTap: () -> Void
 
     @State private var isHovered = false
+    @State private var showDeleteConfirmation = false
 
     var body: some View {
         HStack(spacing: 4) {
@@ -54,7 +55,7 @@ struct AttachmentChip: View {
                 .font(.caption)
                 .lineLimit(1)
                 .foregroundColor(.primary)
-            Button(action: onDelete) {
+            Button(action: { showDeleteConfirmation = true }) {
                 Image(systemName: "xmark.circle.fill")
                     .font(.caption2)
                     .foregroundColor(.secondary.opacity(isHovered ? 1.0 : 0.6))
@@ -68,5 +69,11 @@ struct AttachmentChip: View {
         .overlay(Capsule().stroke(Color.primary.opacity(0.1), lineWidth: 0.5))
         .onHover { isHovered = $0 }
         .onTapGesture { onTap() }
+        .alert("Remove Attachment?", isPresented: $showDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Remove", role: .destructive) { onDelete() }
+        } message: {
+            Text("Remove \"\(label)\" from this prompt?")
+        }
     }
 }

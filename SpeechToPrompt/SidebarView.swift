@@ -137,6 +137,7 @@ struct SidebarView: View {
 
     @State private var hoveredProjectID: UUID?
     @State private var hoveredPromptID: UUID?
+    @State private var hoveredAddPrompt = false
     @State private var hoveredNewProject = false
 
     private func projectHeader(project: Project) -> some View {
