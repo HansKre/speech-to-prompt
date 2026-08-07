@@ -98,7 +98,7 @@ struct SidebarView: View {
                 }
             }
         }
-        .frame(minWidth: 200, idealWidth: 220, maxWidth: 280)
+        .frame(minWidth: 200, idealWidth: 240, maxWidth: 320)
         .onAppear { loadCollapsedState() }
         .sheet(isPresented: $showNewProject) {
             NameInputSheet(
