@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import UniformTypeIdentifiers
 
 struct SidebarView: View {
     @ObservedObject var projectStore: ProjectStore
@@ -16,31 +17,43 @@ struct SidebarView: View {
     @State private var deletingPromptProjectID: UUID?
     @State private var showDeleteProjectAlert = false
     @State private var showDeletePromptAlert = false
+    @State private var collapsedProjectIDs: Set<UUID> = []
+    @State private var dragOverProjectID: UUID?
+    @State private var hoveredProjectID: UUID?
+    @State private var hoveredPromptID: UUID?
+    @State private var hoveredAddPrompt = false
+    @State private var hoveredNewProject = false
 
     var body: some View {
         VStack(spacing: 0) {
-            List(selection: Binding<UUID?>(
-                get: { projectStore.selectedPromptID },
-                set: { id in
-                    guard !isRecording, let id else { return }
-                    projectStore.selectPrompt(id)
-                }
-            )) {
-                ForEach(projectStore.projects) { project in
-                    Section {
-                        ForEach(project.prompts) { prompt in
-                            promptRow(prompt: prompt, projectID: project.id)
-                                .tag(prompt.id)
-                        }
-                        .onMove { source, destination in
-                            projectStore.movePrompt(projectID: project.id, from: source, to: destination)
-                        }
-                    } header: {
+            ScrollView {
+                VStack(spacing: 2) {
+                    ForEach(projectStore.projects) { project in
                         projectHeader(project: project)
+                            .onDrop(of: [.data], delegate: SidebarDropDelegate(
+                                targetProjectID: project.id,
+                                targetPromptID: nil,
+                                projectStore: projectStore,
+                                dragOverProjectID: $dragOverProjectID
+                            ))
+
+                        if !collapsedProjectIDs.contains(project.id) {
+                            ForEach(project.prompts) { prompt in
+                                promptRow(prompt: prompt, projectID: project.id)
+                                    .padding(.leading, 16)
+                                    .onDrop(of: [.data], delegate: SidebarDropDelegate(
+                                        targetProjectID: project.id,
+                                        targetPromptID: prompt.id,
+                                        projectStore: projectStore,
+                                        dragOverProjectID: $dragOverProjectID
+                                    ))
+                            }
+                        }
                     }
                 }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
             }
-            .listStyle(.sidebar)
 
             Divider()
 
@@ -86,6 +99,7 @@ struct SidebarView: View {
             }
         }
         .frame(minWidth: 200, idealWidth: 220, maxWidth: 280)
+        .onAppear { loadCollapsedState() }
         .sheet(isPresented: $showNewProject) {
             NameInputSheet(
                 title: "New Project",
@@ -158,15 +172,49 @@ struct SidebarView: View {
         }
     }
 
-    @State private var hoveredProjectID: UUID?
-    @State private var hoveredPromptID: UUID?
-    @State private var hoveredAddPrompt = false
-    @State private var hoveredNewProject = false
+    // MARK: - Collapse Persistence
+
+    private func loadCollapsedState() {
+        let ids = UserDefaults.standard.stringArray(forKey: "collapsedProjectIDs") ?? []
+        collapsedProjectIDs = Set(ids.compactMap { UUID(uuidString: $0) })
+    }
+
+    private func persistCollapsedState() {
+        let ids = collapsedProjectIDs.map { $0.uuidString }
+        UserDefaults.standard.set(ids, forKey: "collapsedProjectIDs")
+    }
+
+    private func toggleCollapse(for projectID: UUID) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            if collapsedProjectIDs.contains(projectID) {
+                collapsedProjectIDs.remove(projectID)
+            } else {
+                collapsedProjectIDs.insert(projectID)
+            }
+        }
+        persistCollapsedState()
+    }
+
+    // MARK: - Project Header
 
     private func projectHeader(project: Project) -> some View {
         let isHovered = hoveredProjectID == project.id
+        let isDropTarget = dragOverProjectID == project.id
 
         return HStack(spacing: 6) {
+            DragHandle {
+                SidebarDragHelper.makeProvider(for: .project(id: project.id))
+            }
+
+            Image(systemName: collapsedProjectIDs.contains(project.id) ? "chevron.right" : "chevron.down")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .frame(width: 12)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    toggleCollapse(for: project.id)
+                }
+
             Image(systemName: "folder.fill")
                 .foregroundColor(.purple)
                 .font(.callout)
@@ -177,7 +225,7 @@ struct SidebarView: View {
             Spacer()
 
             HStack(spacing: 2) {
-                sidebarActionButton(icon: "plus", color: .purple, tooltip: "Add Prompt") {
+                sidebarActionButton(icon: "plus", color: .purple, tooltip: "Add Prompt (⌘N)") {
                     newPromptProjectID = project.id
                     showNewPrompt = true
                 }
@@ -192,12 +240,11 @@ struct SidebarView: View {
             }
             .opacity(isHovered ? 1 : 0)
         }
-        .padding(.vertical, 4)
-        .padding(.horizontal, 4)
-        .padding(.trailing, 4)
+        .padding(.vertical, 6)
+        .padding(.horizontal, 8)
         .background(
-            RoundedRectangle(cornerRadius: 5)
-                .fill(isHovered ? Color.primary.opacity(0.06) : Color.clear)
+            RoundedRectangle(cornerRadius: 6)
+                .fill(isDropTarget ? Color.purple.opacity(0.15) : (isHovered ? Color.primary.opacity(0.06) : Color.clear))
         )
         .contentShape(Rectangle())
         .onHover { hovered in
@@ -220,6 +267,10 @@ struct SidebarView: View {
                 showNewPrompt = true
             }
             Divider()
+            Button(collapsedProjectIDs.contains(project.id) ? "Expand" : "Collapse") {
+                toggleCollapse(for: project.id)
+            }
+            Divider()
             Button("Rename") {
                 renameText = project.name
                 renamingProjectID = project.id
@@ -231,11 +282,17 @@ struct SidebarView: View {
         }
     }
 
+    // MARK: - Prompt Row
+
     private func promptRow(prompt: Prompt, projectID: UUID) -> some View {
         let isHovered = hoveredPromptID == prompt.id
         let isSelected = projectStore.selectedPromptID == prompt.id
 
         return HStack(spacing: 6) {
+            DragHandle {
+                SidebarDragHelper.makeProvider(for: .prompt(promptID: prompt.id, sourceProjectID: projectID))
+            }
+
             Button(action: {
                 projectStore.togglePromptDone(projectID: projectID, promptID: prompt.id)
             }) {
@@ -267,13 +324,17 @@ struct SidebarView: View {
             }
             .opacity(isHovered ? 1 : 0)
         }
-        .padding(.vertical, 3)
-        .padding(.horizontal, 4)
+        .padding(.vertical, 4)
+        .padding(.horizontal, 8)
         .background(
             RoundedRectangle(cornerRadius: 5)
-                .fill(isHovered && !isSelected ? Color.primary.opacity(0.06) : Color.clear)
+                .fill(isSelected ? Color.accentColor.opacity(0.2) : (isHovered ? Color.primary.opacity(0.06) : Color.clear))
         )
         .contentShape(Rectangle())
+        .onTapGesture {
+            guard !isRecording else { return }
+            projectStore.selectPrompt(prompt.id)
+        }
         .onHover { hovered in
             if hovered {
                 NSCursor.pointingHand.push()
@@ -284,13 +345,26 @@ struct SidebarView: View {
                 hoveredPromptID = hovered ? prompt.id : nil
             }
         }
-
         .opacity(prompt.isDone ? 0.5 : 1.0)
         .contextMenu {
             Button(prompt.isDone ? "Mark as To Do" : "Mark as Done") {
                 projectStore.togglePromptDone(projectID: projectID, promptID: prompt.id)
             }
             Divider()
+            if projectStore.projects.count > 1 {
+                Menu("Move to Project") {
+                    ForEach(projectStore.projects.filter { $0.id != projectID }) { target in
+                        Button(target.name) {
+                            projectStore.movePromptToProject(
+                                promptID: prompt.id,
+                                fromProjectID: projectID,
+                                toProjectID: target.id
+                            )
+                        }
+                    }
+                }
+                Divider()
+            }
             Button("Rename") {
                 renameText = prompt.name
                 renamingPromptID = prompt.id
@@ -307,6 +381,95 @@ struct SidebarView: View {
         SidebarActionButtonView(icon: icon, color: color, tooltip: tooltip, action: action)
     }
 }
+
+// MARK: - Drag Handle
+
+struct DragHandle: View {
+    let provider: () -> NSItemProvider
+    @State private var isHovered = false
+
+    var body: some View {
+        Image(systemName: "line.3.horizontal")
+            .font(.caption2)
+            .foregroundColor(isHovered ? .primary : .secondary.opacity(0.5))
+            .frame(width: 14, height: 14)
+            .contentShape(Rectangle())
+            .onDrag(provider)
+            .onHover { hovered in
+                if hovered {
+                    NSCursor.openHand.push()
+                } else {
+                    NSCursor.pop()
+                }
+                withAnimation(.easeInOut(duration: 0.1)) {
+                    isHovered = hovered
+                }
+            }
+    }
+}
+
+// MARK: - Unified Drop Delegate
+
+struct SidebarDropDelegate: DropDelegate {
+    let targetProjectID: UUID
+    let targetPromptID: UUID?
+    let projectStore: ProjectStore
+    @Binding var dragOverProjectID: UUID?
+
+    func validateDrop(info: DropInfo) -> Bool {
+        true
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard targetPromptID == nil else { return }
+        withAnimation(.easeInOut(duration: 0.15)) {
+            dragOverProjectID = targetProjectID
+        }
+    }
+
+    func dropExited(info: DropInfo) {
+        guard targetPromptID == nil else { return }
+        withAnimation(.easeInOut(duration: 0.15)) {
+            if dragOverProjectID == targetProjectID {
+                dragOverProjectID = nil
+            }
+        }
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        dragOverProjectID = nil
+
+        guard let item = info.itemProviders(for: [.data]).first else { return false }
+
+        item.loadDataRepresentation(forTypeIdentifier: UTType.data.identifier) { data, _ in
+            guard let data, let dragItem = SidebarDragHelper.decode(from: data) else { return }
+            DispatchQueue.main.async {
+                switch dragItem {
+                case .project(let id):
+                    projectStore.moveProject(from: id, to: targetProjectID)
+
+                case .prompt(let promptID, let sourceProjectID):
+                    if let targetPromptID, sourceProjectID == targetProjectID {
+                        projectStore.reorderPrompt(projectID: targetProjectID, promptID: promptID, beforePromptID: targetPromptID)
+                    } else {
+                        projectStore.movePromptToProject(
+                            promptID: promptID,
+                            fromProjectID: sourceProjectID,
+                            toProjectID: targetProjectID
+                        )
+                    }
+                }
+            }
+        }
+        return true
+    }
+}
+
+// MARK: - Action Button
 
 private struct SidebarActionButtonView: View {
     let icon: String

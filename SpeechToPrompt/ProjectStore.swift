@@ -117,6 +117,53 @@ class ProjectStore: ObservableObject {
         save()
     }
 
+    func reorderPrompt(projectID: UUID, promptID: UUID, beforePromptID: UUID) {
+        guard let pIndex = projects.firstIndex(where: { $0.id == projectID }),
+              let fromIndex = projects[pIndex].prompts.firstIndex(where: { $0.id == promptID }),
+              let toIndex = projects[pIndex].prompts.firstIndex(where: { $0.id == beforePromptID }),
+              fromIndex != toIndex else { return }
+        let offset = toIndex > fromIndex ? toIndex + 1 : toIndex
+        projects[pIndex].prompts.move(fromOffsets: IndexSet(integer: fromIndex), toOffset: offset)
+        save()
+    }
+
+    func moveProject(from sourceID: UUID, to destinationID: UUID) {
+        guard let sourceIndex = projects.firstIndex(where: { $0.id == sourceID }),
+              let destIndex = projects.firstIndex(where: { $0.id == destinationID }),
+              sourceIndex != destIndex else { return }
+        let toOffset = destIndex > sourceIndex ? destIndex + 1 : destIndex
+        projects.move(fromOffsets: IndexSet(integer: sourceIndex), toOffset: toOffset)
+        save()
+    }
+
+    func movePromptToProject(promptID: UUID, fromProjectID: UUID, toProjectID: UUID) {
+        guard let sourceIndex = projects.firstIndex(where: { $0.id == fromProjectID }),
+              let destIndex = projects.firstIndex(where: { $0.id == toProjectID }),
+              let promptIndex = projects[sourceIndex].prompts.firstIndex(where: { $0.id == promptID }) else { return }
+        guard fromProjectID != toProjectID else { return }
+
+        let prompt = projects[sourceIndex].prompts.remove(at: promptIndex)
+        projects[destIndex].prompts.append(prompt)
+
+        movePromptFiles(promptID: promptID, fromProjectID: fromProjectID, toProjectID: toProjectID)
+
+        selectedProjectID = toProjectID
+        selectedPromptID = promptID
+        save()
+    }
+
+    private func movePromptFiles(promptID: UUID, fromProjectID: UUID, toProjectID: UUID) {
+        let fm = FileManager.default
+        let source = promptsBaseURL
+            .appendingPathComponent(fromProjectID.uuidString)
+            .appendingPathComponent(promptID.uuidString)
+        guard fm.fileExists(atPath: source.path) else { return }
+        let destDir = promptsBaseURL.appendingPathComponent(toProjectID.uuidString)
+        try? fm.createDirectory(at: destDir, withIntermediateDirectories: true)
+        let dest = destDir.appendingPathComponent(promptID.uuidString)
+        try? fm.moveItem(at: source, to: dest)
+    }
+
     func togglePromptDone(projectID: UUID, promptID: UUID) {
         guard let pIndex = projects.firstIndex(where: { $0.id == projectID }),
               let qIndex = projects[pIndex].prompts.firstIndex(where: { $0.id == promptID }) else { return }
