@@ -4,6 +4,7 @@ struct RecordingOverlayView: View {
     @ObservedObject var audioManager: AudioManager
     @ObservedObject var whisperManager: WhisperManager
     @AppStorage("autoRefineSetting") private var autoRefine = false
+    @AppStorage("autoTranslateSetting") private var autoTranslate = false
 
     let onStop: () -> Void
 
@@ -25,6 +26,8 @@ struct RecordingOverlayView: View {
                     stopButton
 
                     autoRefineToggle
+
+                    autoTranslateToggle
                 }
             }
             .padding(40)
@@ -67,13 +70,17 @@ struct RecordingOverlayView: View {
                     .controlSize(.large)
                     .tint(.white)
 
-                Text("Transcribing with Metal GPU...")
+                Text(whisperManager.statusMessage.contains("Translating")
+                     ? "Translating to English..."
+                     : "Transcribing with Metal GPU...")
                     .font(.headline)
                     .foregroundColor(.white)
 
-                Text(whisperManager.statusMessage)
-                    .font(.caption)
-                    .foregroundColor(.white.opacity(0.7))
+                if !whisperManager.statusMessage.contains("Translating") {
+                    Text(whisperManager.statusMessage)
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.7))
+                }
             }
         }
     }
@@ -143,6 +150,21 @@ struct RecordingOverlayView: View {
         .buttonStyle(.plain)
         .pointerOnHover()
         .tooltip(autoRefine ? "AI will refine recording" : "AI refinement manual")
+    }
+
+    private var autoTranslateToggle: some View {
+        Button(action: { autoTranslate.toggle() }) {
+            HStack(spacing: 6) {
+                Image(systemName: "character.bubble")
+                    .font(.system(size: 14))
+                Text("Auto Translate")
+                    .font(.subheadline)
+            }
+            .foregroundColor(autoTranslate ? .blue : .secondary)
+        }
+        .buttonStyle(.plain)
+        .pointerOnHover()
+        .tooltip(autoTranslate ? "Auto-translate to English enabled" : "Auto-translate to English disabled")
     }
 
     private func formatDuration(_ duration: TimeInterval) -> String {

@@ -143,16 +143,53 @@ class LLMManager: ObservableObject {
 
         Do not add any preamble (like "Here is your refined prompt:") or postamble. Output ONLY the refined text itself, ready to be copied and pasted.
         """
-        
+
         let messages = [
             ChatMessage(role: "system", content: systemPrompt),
             ChatMessage(role: "user", content: promptText)
         ]
-        
+
+        return try await sendGenericLLMRequest(config: config, messages: messages)
+    }
+    
+    func translateToEnglish(text: String) async -> String {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return text
+        }
+
+        guard let config = loadConfig() else {
+            return text
+        }
+
+        let systemPrompt = """
+        You are a language detection and translation assistant.
+
+        1. Detect the language of the user's input.
+        2. If the input is already in English, output it exactly as-is with no changes.
+        3. If the input is NOT in English, translate it to English accurately, preserving the original meaning, tone, and structure.
+
+        Output ONLY the final text (either the original English or the translated English). Do not add any preamble, explanation, or labels.
+        """
+
+        let messages = [
+            ChatMessage(role: "system", content: systemPrompt),
+            ChatMessage(role: "user", content: text)
+        ]
+
+        do {
+            let translated = try await sendGenericLLMRequest(config: config, messages: messages)
+            return translated
+        } catch {
+            DiagnosticsManager.shared.log("Translation failed: \(error.localizedDescription)")
+            return text
+        }
+    }
+
+    private func sendGenericLLMRequest(config: LLMConfig, messages: [ChatMessage]) async throws -> String {
         var requestUrlString = config.apiUrl.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let headers: [String: String]
         let bodyData: Data
-        
+
         if config.apiType.lowercased() == "azure" {
             let version = config.apiVersion ?? "2024-10-21"
             requestUrlString += "/openai/deployments/\(config.model)/chat/completions?api-version=\(version)"
@@ -171,33 +208,33 @@ class LLMManager: ObservableObject {
             let body = OpenAIRequestBody(model: config.model, messages: messages)
             bodyData = try JSONEncoder().encode(body)
         }
-        
+
         guard let url = URL(string: requestUrlString) else {
             throw NSError(domain: "LLMManager", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid API URL constructed: \(requestUrlString)"])
         }
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.httpBody = bodyData
         for (key, value) in headers {
             request.setValue(value, forHTTPHeaderField: key)
         }
-        
+
         let (data, response) = try await URLSession.shared.data(for: request)
-        
+
         if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
             let bodyString = String(data: data, encoding: .utf8) ?? "No response body"
             throw NSError(domain: "LLMManager", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP Status \(httpResponse.statusCode): \(bodyString)"])
         }
-        
+
         let llmResponse = try JSONDecoder().decode(LLMResponse.self, from: data)
         guard let resultText = llmResponse.choices.first?.message.content else {
             throw NSError(domain: "LLMManager", code: 500, userInfo: [NSLocalizedDescriptionKey: "Empty choices returned from LLM."])
         }
-        
+
         return resultText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
-    
+
     func clearImprovedPrompt() {
         self.improvedPrompt = nil
         self.state = .idle

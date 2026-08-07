@@ -15,6 +15,7 @@ struct PromptDetailView: View {
 
     @AppStorage("pauseSpotifySetting") private var pauseSpotify = true
     @AppStorage("autoRefineSetting") private var autoRefine = false
+    @AppStorage("autoTranslateSetting") private var autoTranslate = false
     @State private var copyFeedback = false
     @State private var copyRefinedFeedback = false
     @State private var copyRawURLFeedback = false
@@ -153,6 +154,15 @@ struct PromptDetailView: View {
             .buttonStyle(.plain)
             .pointerOnHover()
             .tooltip(autoRefine ? "AI will refine after recording" : "AI refinement is manual")
+
+            Button(action: { autoTranslate.toggle() }) {
+                Image(systemName: "character.bubble")
+                    .font(.system(size: 18))
+                    .foregroundColor(autoTranslate ? .blue : .secondary)
+            }
+            .buttonStyle(.plain)
+            .pointerOnHover()
+            .tooltip(autoTranslate ? "Auto-translate to English enabled" : "Auto-translate to English disabled")
 
             Spacer()
         }
@@ -699,6 +709,13 @@ struct PromptDetailView: View {
             Task {
                 await whisperManager.transcribeAudio(fileURL: url, modelURL: modelManager.localModelURL)
                 stoppingInternally = false
+                if autoTranslate && !whisperManager.transcriptionResult.isEmpty {
+                    whisperManager.statusMessage = "Translating to English..."
+                    let translated = await llmManager.translateToEnglish(text: whisperManager.transcriptionResult)
+                    whisperManager.transcriptionResult = translated
+                    whisperManager.statusMessage = ""
+                }
+                whisperManager.isProcessingFinalAudio = false
                 if autoRefine && !whisperManager.transcriptionResult.isEmpty {
                     await llmManager.improvePrompt(text: whisperManager.transcriptionResult)
                 }
@@ -724,6 +741,13 @@ struct PromptDetailView: View {
         }
         Task {
             await whisperManager.transcribeAudio(fileURL: url, modelURL: modelManager.localModelURL)
+            if autoTranslate && !whisperManager.transcriptionResult.isEmpty {
+                whisperManager.statusMessage = "Translating to English..."
+                let translated = await llmManager.translateToEnglish(text: whisperManager.transcriptionResult)
+                whisperManager.transcriptionResult = translated
+                whisperManager.statusMessage = ""
+            }
+            whisperManager.isProcessingFinalAudio = false
             if autoRefine && !whisperManager.transcriptionResult.isEmpty {
                 await llmManager.improvePrompt(text: whisperManager.transcriptionResult)
             }
