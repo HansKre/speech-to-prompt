@@ -978,6 +978,7 @@ private struct ActionIconButton: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)
+        .focusable(false)
         .pointerOnHover()
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
