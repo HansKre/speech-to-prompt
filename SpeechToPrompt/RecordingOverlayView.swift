@@ -23,6 +23,8 @@ struct RecordingOverlayView: View {
                 if isRecording {
                     waveformView
 
+                    liveTranscriptionView
+
                     stopButton
 
                     autoRefineToggle
@@ -116,6 +118,31 @@ struct RecordingOverlayView: View {
         }
         .frame(height: 80)
         .animation(.easeOut(duration: 0.15), value: audioManager.recordedSamples.count)
+    }
+
+    @ViewBuilder
+    private var liveTranscriptionView: some View {
+        if !whisperManager.transcriptionResult.isEmpty {
+            ScrollViewReader { proxy in
+                ScrollView {
+                    Text(whisperManager.transcriptionResult)
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.7))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .id("transcriptionBottom")
+                }
+                .frame(maxHeight: 120)
+                .background(Color.white.opacity(0.05))
+                .cornerRadius(8)
+                .onChange(of: whisperManager.transcriptionResult) {
+                    withAnimation {
+                        proxy.scrollTo("transcriptionBottom", anchor: .bottom)
+                    }
+                }
+            }
+        }
     }
 
     private var stopButton: some View {
