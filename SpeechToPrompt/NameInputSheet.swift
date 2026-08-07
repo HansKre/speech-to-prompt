@@ -35,6 +35,7 @@ struct NameInputSheet: View {
                 }
                 .pointerOnHover()
                 .keyboardShortcut(.cancelAction)
+                .tooltip("Cancel (Esc)")
 
                 Spacer()
 
@@ -43,6 +44,7 @@ struct NameInputSheet: View {
                 }
                 .pointerOnHover()
                 .keyboardShortcut(.defaultAction)
+                .tooltip("Confirm (Return)")
                 .disabled(text.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }

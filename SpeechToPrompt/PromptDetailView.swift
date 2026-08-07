@@ -12,6 +12,7 @@ struct PromptDetailView: View {
 
     @Binding var showSettings: Bool
     @Binding var showDiagnostics: Bool
+    @Binding var showKeyboardShortcuts: Bool
 
     @AppStorage("pauseSpotifySetting") private var pauseSpotify = true
     @AppStorage("autoRefineSetting") private var autoRefine = false
@@ -100,6 +101,9 @@ struct PromptDetailView: View {
                     }
                     ActionIconButton(icon: "terminal.fill", tooltip: "Diagnostics") {
                         showDiagnostics = true
+                    }
+                    ActionIconButton(icon: "command", tooltip: "Keyboard Shortcuts (⌘K)") {
+                        showKeyboardShortcuts = true
                     }
                 }
             }

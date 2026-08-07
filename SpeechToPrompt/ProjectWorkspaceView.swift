@@ -11,6 +11,7 @@ struct ProjectWorkspaceView: View {
 
     @Binding var showSettings: Bool
     @Binding var showDiagnostics: Bool
+    @Binding var showKeyboardShortcuts: Bool
 
     private var showRecordingOverlay: Bool {
         audioManager.isRecording || whisperManager.isTranscribing || whisperManager.isProcessingFinalAudio
@@ -34,7 +35,8 @@ struct ProjectWorkspaceView: View {
                         diagnosticsManager: diagnosticsManager,
                         attachmentManager: attachmentManager,
                         showSettings: $showSettings,
-                        showDiagnostics: $showDiagnostics
+                        showDiagnostics: $showDiagnostics,
+                        showKeyboardShortcuts: $showKeyboardShortcuts
                     )
                 } else {
                     emptyPromptView

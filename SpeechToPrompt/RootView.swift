@@ -11,6 +11,7 @@ struct RootView: View {
 
     @State private var showSettings = false
     @State private var showDiagnostics = false
+    @State private var showKeyboardShortcuts = false
 
     var body: some View {
         Group {
@@ -24,7 +25,8 @@ struct RootView: View {
                     diagnosticsManager: diagnosticsManager,
                     attachmentManager: attachmentManager,
                     showSettings: $showSettings,
-                    showDiagnostics: $showDiagnostics
+                    showDiagnostics: $showDiagnostics,
+                    showKeyboardShortcuts: $showKeyboardShortcuts
                 )
             } else {
                 DashboardView(
@@ -39,6 +41,15 @@ struct RootView: View {
         .sheet(isPresented: $showDiagnostics) {
             diagnosticsView
         }
+        .sheet(isPresented: $showKeyboardShortcuts) {
+            KeyboardShortcutsView(isPresented: $showKeyboardShortcuts)
+        }
+        .background(
+            Button("") { showKeyboardShortcuts = true }
+                .keyboardShortcut("k", modifiers: .command)
+                .frame(width: 0, height: 0)
+                .opacity(0)
+        )
     }
 
     // MARK: - Settings
@@ -133,6 +144,7 @@ struct RootView: View {
                     showDiagnostics = false
                 }
                 .keyboardShortcut(.defaultAction)
+                .tooltip("Close (Return)")
             }
 
             VStack(alignment: .leading, spacing: 8) {
